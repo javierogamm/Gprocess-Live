@@ -1,5 +1,14 @@
 # Historial de cambios
 
+## v1.1.19
+- Añadido modal de guardado con selección o creación de subfunción al persistir flujos JSON en base de datos.
+
+## v1.1.18
+- Añadidos botones para guardar y cargar flujos JSON desde base de datos, con selector por nombre.
+
+## v1.1.17
+- Añadido microservicio para importar/exportar JSON de Process_Flows en Supabase vía endpoints GET/POST.
+
 ## v1.1.16
 - Ajustada la importación de tesauros por copypaste para aceptar el pegado directo desde la app, manteniendo compatibilidad con el formato anterior.
 
