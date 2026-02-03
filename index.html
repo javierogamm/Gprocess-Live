@@ -18,7 +18,10 @@
                 <summary><h2>Usuario</h2></summary>
                 <div class="left-panel-section-body">
                     <div class="user-status">
-                        <p id="userStatusName">Sin sesión activa.</p>
+                        <div class="user-status-line">
+                            <span class="user-status-indicator" aria-hidden="true"></span>
+                            <p id="userStatusName">Sin sesión activa.</p>
+                        </div>
                         <div class="user-actions">
                             <button class="btn" id="btnUserLogin">Iniciar sesión</button>
                             <button class="btn" id="btnUserEdit" disabled>Editar usuario</button>
@@ -279,8 +282,8 @@
 <!-- =========================
     MODAL LOGIN / EDICIÓN DE USUARIO
 ========================= -->
-<div id="userModal" class="modal hidden">
-    <div class="modal-content user-modal-content">
+<div id="userModal" class="modal hidden" data-auth-allow="true">
+    <div class="modal-content user-modal-content" data-auth-allow="true">
         <div class="csv-modal-header">
             <h2 id="userModalTitle">Iniciar sesión</h2>
             <button id="userModalClose" class="csv-close-btn" aria-label="Cerrar">&times;</button>

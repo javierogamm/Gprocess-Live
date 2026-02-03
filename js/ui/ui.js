@@ -552,9 +552,12 @@ const userModalClose = document.getElementById("userModalClose");
 const userNameInput = document.getElementById("userNameInput");
 const userPassInput = document.getElementById("userPassInput");
 const userModalSubmit = document.getElementById("userModalSubmit");
+const userStatusIndicator = document.querySelector(".user-status-indicator");
 
 let userModalMode = "login";
 let currentUser = null;
+let isAppLocked = false;
+const AUTH_ALLOW_SELECTOR = "[data-auth-allow=\"true\"]";
 
 const readStoredUser = () => {
     try {
@@ -577,6 +580,31 @@ const persistUser = (user) => {
     syncUserUI();
 };
 
+const setAppLock = (locked) => {
+    isAppLocked = locked;
+    document.body.classList.toggle("app-locked", locked);
+    const controls = document.querySelectorAll(
+        "button, input, select, textarea, [contenteditable=\"true\"]"
+    );
+    controls.forEach((control) => {
+        const allowed = control.closest(AUTH_ALLOW_SELECTOR) || control.dataset.authAllow === "true";
+        if (allowed) return;
+        if (control.matches("[contenteditable]")) {
+            if (locked) {
+                control.dataset.prevContenteditable = control.getAttribute("contenteditable") ?? "true";
+                control.setAttribute("contenteditable", "false");
+            } else if (control.dataset.prevContenteditable) {
+                control.setAttribute("contenteditable", control.dataset.prevContenteditable);
+                delete control.dataset.prevContenteditable;
+            }
+            return;
+        }
+        if ("disabled" in control) {
+            control.disabled = locked;
+        }
+    });
+};
+
 const syncUserUI = () => {
     const name = currentUser?.name ? currentUser.name : null;
     if (userStatusName) {
@@ -584,9 +612,13 @@ const syncUserUI = () => {
             ? `Sesión iniciada: ${name}`
             : "Sin sesión activa.";
     }
+    if (userStatusIndicator) {
+        userStatusIndicator.classList.toggle("is-online", !!name);
+    }
     if (btnUserEdit) btnUserEdit.disabled = !name;
     if (btnUserLogout) btnUserLogout.disabled = !name;
     if (btnUserLogin) btnUserLogin.disabled = !!name;
+    setAppLock(!name);
 };
 
 const openUserModal = (mode) => {
@@ -608,6 +640,7 @@ const openUserModal = (mode) => {
 };
 
 const closeUserModal = () => {
+    if (!currentUser && isAppLocked) return;
     if (userModal) userModal.classList.add("hidden");
 };
 
@@ -649,8 +682,14 @@ const handleUserSubmit = async () => {
     }
 };
 
+if (btnUserLogin) {
+    btnUserLogin.dataset.authAllow = "true";
+}
 currentUser = readStoredUser();
 syncUserUI();
+if (!currentUser) {
+    openUserModal("login");
+}
 
 if (btnUserLogin) {
     btnUserLogin.addEventListener("click", () => openUserModal("login"));
@@ -663,6 +702,7 @@ if (btnUserEdit) {
 if (btnUserLogout) {
     btnUserLogout.addEventListener("click", () => {
         persistUser(null);
+        openUserModal("login");
         alert("Sesión cerrada.");
     });
 }
