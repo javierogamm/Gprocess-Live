@@ -1,5 +1,10 @@
 # Historial de cambios
 
+## v1.1.21
+- Añadido inicio de sesión y edición de usuario con persistencia local para gestionar credenciales en la app.
+- Al guardar flujos en la BDD se informa el creador y se muestra en el modal de carga.
+- Incorporado el endpoint de usuarios y ampliada la API de flujos para incluir el campo creador.
+
 ## v1.1.20
 - Reorganizado el panel izquierdo en un acordeón colapsado por defecto, agrupando acciones y renombrando secciones según la nueva estructura.
 - Ajustados los rótulos de acciones de guardado, carga y exportación CSV en el panel izquierdo para reflejar la nueva nomenclatura.
