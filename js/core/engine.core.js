@@ -120,26 +120,29 @@ asignaciones: {
 /* ============================================================
    EXPORTAR TODO EL DIAGRAMA A JSON
 ============================================================ */
+buildExportPayload() {
+    return {
+        fichaProyecto: this.fichaProyecto,
+
+        // Tesauro (igual que antes)
+        tesauro: (Array.isArray(this.tesauro) && this.tesauro.length > 0)
+            ? this.tesauro.map(x => ({...x}))
+            : (window.DataTesauro ? DataTesauro.campos.map(x => ({...x})) : []),
+
+        // ⭐ NUEVO: Pool global de asignaciones
+        asignaciones: {
+            grupos: Array.from(this.asignaciones.grupos || []),
+            usuarios: Array.from(this.asignaciones.usuarios || [])
+        },
+
+        nodos: this.data.nodos,
+        conexiones: this.data.conexiones
+    };
+},
+
 exportToJSON() {
-const full = {
-    fichaProyecto: this.fichaProyecto,
-
-    // Tesauro (igual que antes)
-    tesauro: (Array.isArray(this.tesauro) && this.tesauro.length > 0)
-        ? this.tesauro.map(x => ({...x}))
-        : (window.DataTesauro ? DataTesauro.campos.map(x => ({...x})) : []),
-
-    // ⭐ NUEVO: Pool global de asignaciones
-    asignaciones: {
-        grupos: Array.from(this.asignaciones.grupos || []),
-        usuarios: Array.from(this.asignaciones.usuarios || [])
-    },
-
-    nodos: this.data.nodos,
-    conexiones: this.data.conexiones
-};
-
-      const dataString = JSON.stringify(full, null, 2);
+    const full = this.buildExportPayload();
+    const dataString = JSON.stringify(full, null, 2);
 
     let nombreProceso = this.fichaProyecto.procedimiento?.trim() || "SinNombre";
     nombreProceso = nombreProceso.replace(/[\\\/:*?"<>|]/g, "_");

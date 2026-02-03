@@ -1,5 +1,8 @@
 # Historial de cambios
 
+## v1.1.18
+- Añadidos botones para guardar y cargar flujos JSON desde base de datos, con selector por nombre.
+
 ## v1.1.17
 - Añadido microservicio para importar/exportar JSON de Process_Flows en Supabase vía endpoints GET/POST.
 
