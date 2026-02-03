@@ -1,5 +1,9 @@
 # Historial de cambios
 
+## v1.1.27
+- Ajustado el reordenado de flujo para basarse en los lanzamientos "Lanzar tarea" y respetar nodos terminales con "Cerrar el expediente".
+- Implementado un control de solapes para que el reordenado de nodos seleccionados no superponga elementos y mantenga hojas en lateral.
+
 ## v1.1.26
 - Añadido botón en el panel lateral de selección múltiple para reordenar el flujo según dependencias abuelo/padre/hijo.
 - Automatizada la colocación vertical de cadenas y el desplazamiento lateral de nodos hoja al mismo nivel del padre.

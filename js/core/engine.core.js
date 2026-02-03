@@ -491,9 +491,17 @@ reorderSelectedFlow() {
     const nodes = selectedIds.map(id => Engine.getNode(id)).filter(Boolean);
     if (nodes.length < 2) return;
 
-    const connections = this.data.conexiones.filter(
-        c => selectedSet.has(c.from) && selectedSet.has(c.to)
-    );
+    const normalize = (text = "") => text.toString().toLowerCase().replace(/\s+/g, " ").trim();
+    const titleMap = new Map();
+    nodes.forEach(node => {
+        const key = normalize(node.titulo || "");
+        if (key && !titleMap.has(key)) {
+            titleMap.set(key, node.id);
+        }
+    });
+
+    const launchRegex = /Lanzar tarea\s+['"]?([^'"\n]+)['"]?/gi;
+    const terminalRegex = /Cerrar el expediente/i;
 
     const childrenMap = new Map();
     const parentsMap = new Map();
@@ -502,9 +510,26 @@ reorderSelectedFlow() {
         parentsMap.set(id, []);
     });
 
-    connections.forEach(conn => {
-        if (childrenMap.has(conn.from)) childrenMap.get(conn.from).push(conn.to);
-        if (parentsMap.has(conn.to)) parentsMap.get(conn.to).push(conn.from);
+    nodes.forEach(node => {
+        const text = `${node.titulo || ""}\n${node.descripcion || ""}`;
+        if (terminalRegex.test(text)) return;
+        const found = new Set();
+        let match = null;
+        launchRegex.lastIndex = 0;
+        while ((match = launchRegex.exec(text)) !== null) {
+            const targetKey = normalize(match[1]);
+            if (targetKey) found.add(targetKey);
+        }
+        found.forEach(targetKey => {
+            const targetId = titleMap.get(targetKey);
+            if (!targetId || targetId === node.id) return;
+            if (!childrenMap.get(node.id).includes(targetId)) {
+                childrenMap.get(node.id).push(targetId);
+            }
+            if (!parentsMap.get(targetId).includes(node.id)) {
+                parentsMap.get(targetId).push(node.id);
+            }
+        });
     });
 
     const roots = selectedIds.filter(id => (parentsMap.get(id) || []).length === 0);
@@ -518,8 +543,22 @@ reorderSelectedFlow() {
     const grid = (window.Interactions && Interactions.GRID_SIZE) ? Interactions.GRID_SIZE : 20;
 
     const placed = new Set();
+    const occupied = [];
 
     const snap = (value) => Math.round(value / grid) * grid;
+
+    const overlaps = (rect) => {
+        return occupied.some(o =>
+            rect.x < o.x + o.width &&
+            rect.x + rect.width > o.x &&
+            rect.y < o.y + o.height &&
+            rect.y + rect.height > o.y
+        );
+    };
+
+    const record = (rect) => {
+        occupied.push(rect);
+    };
 
     const setNodePosition = (node, x, y) => {
         node.x = snap(x);
@@ -531,44 +570,77 @@ reorderSelectedFlow() {
         }
     };
 
+    const placeNode = (node, x, y, mode = "vertical") => {
+        const width = node.width || 144;
+        const height = node.height || 68;
+        let finalX = x;
+        let finalY = y;
+
+        if (mode === "lateral") {
+            let attempts = 0;
+            while (overlaps({ x: finalX, y: finalY, width, height }) && attempts < 30) {
+                finalX += width + lateralGap;
+                attempts += 1;
+            }
+        } else {
+            while (overlaps({ x: finalX, y: finalY, width, height })) {
+                finalY += height + verticalGap;
+            }
+        }
+
+        setNodePosition(node, finalX, finalY);
+        record({ x: finalX, y: finalY, width, height });
+        return { x: finalX, y: finalY, width, height };
+    };
+
     const layoutNode = (id, x, y) => {
         const node = Engine.getNode(id);
-        if (!node) return;
-        setNodePosition(node, x, y);
+        if (!node || placed.has(id)) return null;
+        const placedRect = placeNode(node, x, y, "vertical");
         placed.add(id);
 
         const children = childrenMap.get(id) || [];
         const nonLeaf = children.filter(ch => (childrenMap.get(ch) || []).length > 0);
         const leaf = children.filter(ch => (childrenMap.get(ch) || []).length === 0);
 
-        let nextY = y + verticalGap;
+        let nextY = placedRect.y + (placedRect.height || 68) + verticalGap;
         nonLeaf.forEach(childId => {
             if (placed.has(childId)) return;
-            layoutNode(childId, x, nextY);
-            nextY += verticalGap;
+            const childRect = layoutNode(childId, placedRect.x, nextY);
+            if (childRect) {
+                nextY = childRect.y + (childRect.height || 68) + verticalGap;
+            }
         });
 
         const parentWidth = node.width || 144;
         leaf.forEach((childId, index) => {
             if (placed.has(childId)) return;
             const child = Engine.getNode(childId);
-            const childWidth = child?.width || 144;
-            const leafX = x + parentWidth + horizontalGap + index * (childWidth + lateralGap);
-            layoutNode(childId, leafX, y);
+            if (!child) return;
+            const childWidth = child.width || 144;
+            const leafX = placedRect.x + parentWidth + horizontalGap + index * (childWidth + lateralGap);
+            placeNode(child, leafX, placedRect.y, "lateral");
+            placed.add(childId);
         });
+
+        return placedRect;
     };
 
     let currentRootY = baseY;
     roots.forEach(rootId => {
         if (placed.has(rootId)) return;
-        layoutNode(rootId, baseX, currentRootY);
-        currentRootY += verticalGap * 2;
+        const rect = layoutNode(rootId, baseX, currentRootY);
+        if (rect) {
+            currentRootY = rect.y + (rect.height || 68) + verticalGap * 2;
+        }
     });
 
     selectedIds.forEach(id => {
         if (placed.has(id)) return;
-        layoutNode(id, baseX, currentRootY);
-        currentRootY += verticalGap;
+        const rect = layoutNode(id, baseX, currentRootY);
+        if (rect) {
+            currentRootY = rect.y + (rect.height || 68) + verticalGap;
+        }
     });
 
     this.realignConnectionsForSelection(selectedSet);
