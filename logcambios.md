@@ -1,5 +1,8 @@
 # Historial de cambios
 
+## v1.1.17
+- Añadido microservicio para importar/exportar JSON de Process_Flows en Supabase vía endpoints GET/POST.
+
 ## v1.1.16
 - Ajustada la importación de tesauros por copypaste para aceptar el pegado directo desde la app, manteniendo compatibilidad con el formato anterior.
 
