@@ -1,5 +1,9 @@
 # Historial de cambios
 
+## v1.1.22
+- Forzado el modal de inicio de sesión al entrar a la app y bloqueada la interacción con botones hasta autenticar.
+- Mejorada la visibilidad del indicador de sesión activa con un punto verde más notorio.
+
 ## v1.1.21
 - Añadido inicio de sesión y edición de usuario con persistencia local para gestionar credenciales en la app.
 - Al guardar flujos en la BDD se informa el creador y se muestra en el modal de carga.

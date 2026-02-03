@@ -221,6 +221,26 @@ body.panel-locked #canvasArea {
     color: #1f2937;
 }
 
+.user-status-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.user-status-indicator {
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    background: #94a3b8;
+    box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.25);
+    flex: 0 0 auto;
+}
+
+.user-status-indicator.is-online {
+    background: #22c55e;
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.75);
+}
+
 .user-actions {
     display: flex;
     flex-wrap: wrap;
@@ -252,6 +272,21 @@ body.panel-locked #canvasArea {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
+}
+
+body.app-locked #leftPanel,
+body.app-locked #rightPanel,
+body.app-locked #canvasArea,
+body.app-locked #btnAsignaciones,
+body.app-locked #btnCambiosEstado,
+body.app-locked #btnTesauro,
+body.app-locked .floating-control-group {
+    pointer-events: none;
+    filter: grayscale(0.1) opacity(0.55);
+}
+
+body.app-locked #userModal {
+    pointer-events: auto;
 }
 .tm-row-selected {
     background: #dbeafe !important;
