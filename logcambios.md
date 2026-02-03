@@ -1,5 +1,9 @@
 # Historial de cambios
 
+## v1.1.19
+- Sustituido el guardado/carga por un modal amplio con carpetas por subfunción, edición de nombre y creación de subfunciones para organizar flujos.
+- Incluida la columna subfunción en la API de Process_Flows y en los envíos al guardar.
+
 ## v1.1.18
 - Añadidos botones para guardar y cargar flujos JSON desde base de datos, con selector por nombre.
 
