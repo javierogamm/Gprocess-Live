@@ -1,5 +1,9 @@
 # Historial de cambios
 
+## v1.1.20
+- Reorganizado el panel izquierdo en un acordeón colapsado por defecto, agrupando acciones y renombrando secciones según la nueva estructura.
+- Ajustados los rótulos de acciones de guardado, carga y exportación CSV en el panel izquierdo para reflejar la nueva nomenclatura.
+
 ## v1.1.19
 - Sustituido el guardado/carga por un modal amplio con carpetas por subfunción, edición de nombre y creación de subfunciones para organizar flujos.
 - Incluida la columna subfunción en la API de Process_Flows y en los envíos al guardar.

@@ -34,6 +34,56 @@ body {
     margin-top: 0;
 }
 
+.left-panel-accordion {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.left-panel-section {
+    border: 1px solid #374151;
+    border-radius: 8px;
+    background: #111827;
+    overflow: hidden;
+}
+
+.left-panel-section > summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    background: #1f2937;
+}
+
+.left-panel-section > summary::-webkit-details-marker {
+    display: none;
+}
+
+.left-panel-section > summary h2 {
+    margin: 0;
+    font-size: 13px;
+}
+
+.left-panel-section > summary::after {
+    content: "▸";
+    font-size: 12px;
+    color: #cbd5f5;
+    transform: rotate(0deg);
+    transition: transform 0.2s ease;
+}
+
+.left-panel-section[open] > summary::after {
+    transform: rotate(90deg);
+}
+
+.left-panel-section-body {
+    padding: 10px 10px 6px;
+    display: flex;
+    flex-direction: column;
+}
+
 .btn {
     width: 100%;
     margin-bottom: 10px;

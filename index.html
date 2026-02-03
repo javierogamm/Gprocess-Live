@@ -13,69 +13,93 @@
 
     <!-- PANEL IZQUIERDO -->
     <div id="leftPanel">
-        <h2>Procedimiento</h2>
-        <button class="btn" id="btnFichaProyecto">Ficha del proyecto</button>
-        <button class="btn" id="btnVerCSV">📋 Ver procedimiento</button>
+        <div class="left-panel-accordion">
+            <details class="left-panel-section">
+                <summary><h2>Ficha del procedimiento</h2></summary>
+                <div class="left-panel-section-body">
+                    <button class="btn" id="btnFichaProyecto">Ficha del procedimiento</button>
+                    <button class="btn" id="btnVerCSV">📋 Ver procedimiento</button>
+                    <button class="btn" id="btnExportDocx">📄 Exportar resumen DOCX</button>
+                </div>
+            </details>
 
-        <h2>Nodos</h2>
-        <button class="btn" onclick="Engine.createNode('formulario')">+ Formulario</button>
-        <button class="btn" onclick="Engine.createNode('documento')">+ Documento</button>
-        <button class="btn" onclick="Engine.createNode('libre')">+ Libre</button>
-        <button class="btn" onclick="Engine.createNode('decision')">+ Decisión</button>
-        <button class="btn" onclick="Engine.createNode('circuito')">+ Circuito Resolución</button>
-        <button class="btn" onclick="Engine.createNode('plazo')">+ Añadir Plazo</button>
-        <button class="btn" onclick="Engine.createNode('operacion_externa')">+ Operación Externa</button>
-        <button class="btn" onclick="Engine.createNode('notas')">+ Nota</button>
+            <details class="left-panel-section">
+                <summary><h2>Nodos</h2></summary>
+                <div class="left-panel-section-body">
+                    <button class="btn" onclick="Engine.createNode('formulario')">+ Formulario</button>
+                    <button class="btn" onclick="Engine.createNode('documento')">+ Documento</button>
+                    <button class="btn" onclick="Engine.createNode('libre')">+ Libre</button>
+                    <button class="btn" onclick="Engine.createNode('decision')">+ Decisión</button>
+                    <button class="btn" onclick="Engine.createNode('circuito')">+ Circuito Resolución</button>
+                    <button class="btn" onclick="Engine.createNode('plazo')">+ Añadir Plazo</button>
+                    <button class="btn" onclick="Engine.createNode('operacion_externa')">+ Operación Externa</button>
+                    <button class="btn" onclick="Engine.createNode('notas')">+ Nota</button>
+                </div>
+            </details>
 
-                     <!--  Cargar guardar -->
-                     <hr>
-                     <button class="btn" id="btnExportJSON" onclick="Engine.exportToJSON()">💾 Guardar JSON</button>
-                     <button class="btn" id="btnSaveJSONDb">🗄️ Guardar JSON (BDD)</button>
-                     <input type="file" id="fileLoader" accept=".json" style="display:none" onchange="loadJSONFile(event)">
-                     <button class="btn" id="btnImportJSON" onclick="document.getElementById('fileLoader').click()">📂 Cargar JSON</button>
-                     <button class="btn" id="btnLoadJSONDb">🗄️ Cargar JSON (BDD)</button>
-                     <div class="json-buttons-row">
+            <details class="left-panel-section">
+                <summary><h2>Guardar</h2></summary>
+                <div class="left-panel-section-body">
+                    <button class="btn" id="btnSaveJSONDb">🗄️ Guardar en BDD</button>
+                    <button class="btn" id="btnExportJSON" onclick="Engine.exportToJSON()">💾 Descargar Json</button>
+                </div>
+            </details>
+
+            <details class="left-panel-section">
+                <summary><h2>Cargar</h2></summary>
+                <div class="left-panel-section-body">
+                    <input type="file" id="fileLoader" accept=".json" style="display:none" onchange="loadJSONFile(event)">
+                    <button class="btn" id="btnImportJSON" onclick="document.getElementById('fileLoader').click()">📂 Cargar Json</button>
+                    <button class="btn" id="btnLoadJSONDb">🗄️ Cargar de BDD</button>
+                    <div class="json-buttons-row">
                         <button id="btnPasteJSON">📋 Pegar JSON</button>
                         <button id="btnIAJson" title="Abrir asistente IA JSON">
                             🤖 IA JSON
                         </button>
-                    </div>     
-                     <script>
-                     function loadJSONFile(e) {
-                         const file = e.target.files[0];
-                         if (!file) return;
-     
-                         const reader = new FileReader();
-                         reader.onload = (evt) => {
-                             Engine.importFromJSON(evt.target.result);
-                         };
-                         reader.readAsText(file);
-                     }
-                     </script>
-     <hr>
-     <!-- Botón de Export WORD comentado para evitar uso de librerias de momento -->
-     <button class="btn" id="btnExportDocx">📄 Exportar resumen DOCX</button>
-     <button class="btn" id="btnExportFlujo" onclick="Engine.exportFlujoCSV()">📤 Exportar flujo normalizado</button>
-     <button class="btn" id="btnExportTesauro">📤 Exportar tesauro CSV</button>
+                    </div>
+                </div>
+            </details>
 
-<!-- Botón de importación -->
-<!--<button id="btnImportFlujo" class="btn">📥 Importar Flujo CSV</button>-->
-<!-- Botón ver copypaste -->
+            <details class="left-panel-section">
+                <summary><h2>Exportar CSV</h2></summary>
+                <div class="left-panel-section-body">
+                    <button class="btn" id="btnExportFlujo" onclick="Engine.exportFlujoCSV()">📤 Exportar CSV proceso</button>
+                    <button class="btn" id="btnExportTesauro">📤 Exportar CSV tesauros</button>
+                </div>
+            </details>
+        </div>
 
-<div id="importFromTextBlock" style="margin-top:20px; padding:10px; border-top:1px solid #ccc;">
-    <button id="btnImportarTexto"
-        class="btn"
-        style="width:100%; background:#2563eb; color:white;">
-        Importar diagrama desde Gestiona
-    </button>
-</div>
-<!-- Input oculto para seleccionar los dos archivos -->
-<input 
-    type="file" 
-    id="inputFlujoCSV" 
-    accept=".csv" 
-    multiple 
-    style="display: none;">
+        <script>
+        function loadJSONFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                Engine.importFromJSON(evt.target.result);
+            };
+            reader.readAsText(file);
+        }
+        </script>
+
+        <!-- Botón de importación -->
+        <!--<button id="btnImportFlujo" class="btn">📥 Importar Flujo CSV</button>-->
+        <!-- Botón ver copypaste -->
+
+        <div id="importFromTextBlock" style="margin-top:20px; padding:10px; border-top:1px solid #ccc;">
+            <button id="btnImportarTexto"
+                class="btn"
+                style="width:100%; background:#2563eb; color:white;">
+                Importar diagrama desde Gestiona
+            </button>
+        </div>
+        <!-- Input oculto para seleccionar los dos archivos -->
+        <input
+            type="file"
+            id="inputFlujoCSV"
+            accept=".csv"
+            multiple
+            style="display: none;">
     </div>
 
     <!-- ZONA DE DIBUJO -->
