@@ -134,6 +134,7 @@
     <!-- Barra flotante del wizard -->
     <div id="floatingControlGroup" class="floating-control-group">
         <button id="btnWizard" class="floating-wizard-btn">🧙 Asistente</button>
+        <button id="btnImportProcesoCompleto" class="floating-import-btn">⬇️ Importar desde Gestiona</button>
     </div>
         <!-- Panel derecho-->
     <div id="rightPanel">
@@ -280,6 +281,29 @@
 </div>
 
 <!-- =========================
+    MODAL IMPORTAR PROCESO COMPLETO DESDE GESTIONA
+========================= -->
+<div id="importFullProcessModal" class="modal hidden">
+    <div class="modal-content modal-content--wide modal-content--huge import-full-modal">
+        <div class="csv-modal-header import-full-header">
+            <div>
+                <h2>Importar proceso completo desde Gestiona</h2>
+                <p>Guía paso a paso para tesauros, proceso y ficha del procedimiento.</p>
+            </div>
+            <button id="importFullClose" class="csv-close-btn" aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="import-full-body">
+            <div id="importFullSteps" class="import-full-steps"></div>
+            <div id="importFullContent" class="import-full-content"></div>
+        </div>
+        <div class="import-full-footer">
+            <button id="importFullBack" class="btn btn-secundario">Atrás</button>
+            <button id="importFullNext" class="btn">Siguiente</button>
+        </div>
+    </div>
+</div>
+
+<!-- =========================
     MODAL LOGIN / EDICIÓN DE USUARIO
 ========================= -->
 <div id="userModal" class="modal hidden" data-auth-allow="true">
@@ -332,6 +356,7 @@
 <script src="js/features/datatesauro.js"></script>
 <script src="js/features/tesauromanager.js"></script>
 <script src="js/features/wizard.js"></script>
+<script src="js/features/importProcesoCompleto.js"></script>
 <script src="js/interactions/resizepanels.js"></script>
 <script src="js/features/assistant.js"></script>
 <script>
