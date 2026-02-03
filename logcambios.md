@@ -1,5 +1,9 @@
 # Historial de cambios
 
+## v1.1.23
+- Añadido el botón flotante "Importar desde Gestiona" con un modal guiado para importar tesauros, proceso y ficha del procedimiento en secuencia.
+- Incorporada la validación final con resumen para confirmar y montar el proceso completo en la app.
+
 ## v1.1.22
 - Forzado el modal de inicio de sesión al entrar a la app y bloqueada la interacción con botones hasta autenticar.
 - Mejorada la visibilidad del indicador de sesión activa con un punto verde más notorio.

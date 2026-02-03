@@ -303,12 +303,15 @@ body.app-locked #userModal {
     left: 50%;
     transform: translateX(-50%);
     display: flex;
+    flex-direction: column;
+    align-items: center;
     gap: 12px;
     z-index: 5600;
 }
 
 .floating-control-group .floating-wizard-btn,
-.floating-control-group .floating-assistant-btn {
+.floating-control-group .floating-assistant-btn,
+.floating-control-group .floating-import-btn {
     position: relative;
     inset: auto;
     transform: none;
@@ -332,6 +335,153 @@ body.app-locked #userModal {
 .floating-wizard-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.floating-import-btn {
+    background: #E34850;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(227, 72, 80, 0.35);
+    transition: all 0.3s ease;
+}
+
+.floating-import-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(227, 72, 80, 0.5);
+}
+
+.modal-content--huge {
+    width: min(980px, 95vw);
+}
+
+.import-full-modal {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.import-full-header h2 {
+    margin: 0;
+}
+
+.import-full-header p {
+    margin: 4px 0 0;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.import-full-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.import-full-steps {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.import-full-step {
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    color: #0f172a;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.import-full-step.active {
+    background: #1d4ed8;
+    color: #fff;
+}
+
+.import-full-content {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.import-full-choice {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.import-full-option {
+    border: 1px solid #cbd5f5;
+    background: #fff;
+    border-radius: 12px;
+    padding: 12px 14px;
+    text-align: left;
+    cursor: pointer;
+    font-weight: 600;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.import-full-option small {
+    font-weight: 400;
+    color: #64748b;
+}
+
+.import-full-option.active {
+    border-color: #1d4ed8;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.import-full-panel {
+    background: #fff;
+    border: 1px dashed #cbd5f5;
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.import-full-panel textarea,
+.import-full-panel input,
+.import-full-panel select {
+    padding: 8px 10px;
+    border: 1px solid #cbd5f5;
+    border-radius: 8px;
+    font-family: inherit;
+}
+
+.import-full-panel textarea {
+    min-height: 140px;
+    resize: vertical;
+}
+
+.import-full-status {
+    font-size: 13px;
+    color: #0f766e;
+    font-weight: 600;
+}
+
+.import-full-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.import-full-summary {
+    display: grid;
+    gap: 10px;
+}
+
+.import-full-summary-item {
+    background: #fff;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    padding: 12px;
 }
 
 /* Panel lateral del wizard */
