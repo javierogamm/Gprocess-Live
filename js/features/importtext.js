@@ -721,21 +721,40 @@ if (/^Lanzar tarea\s+/i.test(txt)) {
     }
 
     const sideByNode = new Map();
-    const SUBPROCESS_OFFSET = 260;
+    const SUBPROCESS_OFFSET = 360;
 
     function forceRightByTitle(id) {
         const title = (idToNode.get(id)?.titulo || "").toLowerCase();
         return title.includes("subsanaci");
     }
 
+    function branchRejoinsMain(startId) {
+        const visited = new Set();
+        const stack = [startId];
+        while (stack.length) {
+            const currentId = stack.pop();
+            if (!currentId || visited.has(currentId)) continue;
+            visited.add(currentId);
+            const kids = Array.from(childrenOf.get(currentId) || []);
+            if (kids.some(kid => mainPath.has(kid))) return true;
+            kids.forEach(kid => {
+                if (!mainPath.has(kid)) stack.push(kid);
+            });
+        }
+        return false;
+    }
+
     function assignSide(startId, side) {
+        const boostForRejoin = branchRejoinsMain(startId) ? 2 : 1;
         const queue = [startId];
         while (queue.length) {
             const currentId = queue.shift();
             if (!currentId || mainPath.has(currentId)) continue;
             if (sideByNode.has(currentId)) continue;
             const finalSide = forceRightByTitle(currentId) ? 1 : side;
-            sideByNode.set(currentId, finalSide);
+            const magnitude = Math.max(1, Math.abs(finalSide)) * boostForRejoin;
+            const signedSide = Math.sign(finalSide || 1) * magnitude;
+            sideByNode.set(currentId, signedSide);
             const kids = Array.from(childrenOf.get(currentId) || []);
             kids.forEach(kid => {
                 if (!mainPath.has(kid)) queue.push(kid);
@@ -787,8 +806,8 @@ if (/^Lanzar tarea\s+/i.test(txt)) {
     let baseUtilWidth  = Math.max(400, utilRightBase - utilLeftBase);
 
     // ⭐ CAMBIO: si un nivel tiene muchos “primos”, ensanchar el contenedor en X (no en Y)
-    const MIN_SPACING = 220;
-    const MAX_SPACING = 360;
+    const MIN_SPACING = 260;
+    const MAX_SPACING = 420;
     const SIDE_PAD    = 80;
 
     const widestCount = Math.max(...levels.filter(Boolean).map(arr => arr.length), 1);
