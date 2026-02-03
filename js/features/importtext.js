@@ -658,6 +658,102 @@ if (/^Lanzar tarea\s+/i.test(txt)) {
         allNodes.forEach(n => levelOf.set(n.id, depth(n.id)));
     })();
 
+    // --- detectar camino principal (para separar subprocesos)
+    const mainPath = new Set();
+    const depthToLeaf = new Map();
+    (function computeDepthToLeaf() {
+        const memo = new Map();
+        const visiting = new Set();
+
+        function depthForward(id) {
+            if (memo.has(id)) return memo.get(id);
+            if (visiting.has(id)) {
+                memo.set(id, 0);
+                return 0;
+            }
+            visiting.add(id);
+            const kids = Array.from(childrenOf.get(id) || []);
+            let d = 0;
+            for (const kid of kids) {
+                d = Math.max(d, 1 + depthForward(kid));
+            }
+            visiting.delete(id);
+            memo.set(id, d);
+            return d;
+        }
+
+        allNodes.forEach(n => depthToLeaf.set(n.id, depthForward(n.id)));
+    })();
+
+    const roots = allNodes.filter(n => (parentsOf.get(n.id) || new Set()).size === 0);
+    let mainRoot = null;
+    roots.forEach(r => {
+        if (!mainRoot) {
+            mainRoot = r;
+            return;
+        }
+        const dr = depthToLeaf.get(r.id) || 0;
+        const dm = depthToLeaf.get(mainRoot.id) || 0;
+        if (dr > dm) {
+            mainRoot = r;
+            return;
+        }
+        if (dr === dm) {
+            const ar = appearanceIndex.get(r.id) || 0;
+            const am = appearanceIndex.get(mainRoot.id) || 0;
+            if (ar < am) mainRoot = r;
+        }
+    });
+
+    let walker = mainRoot?.id || null;
+    while (walker) {
+        mainPath.add(walker);
+        const kids = Array.from(childrenOf.get(walker) || []);
+        if (!kids.length) break;
+        kids.sort((a, b) => {
+            const da = depthToLeaf.get(a) || 0;
+            const db = depthToLeaf.get(b) || 0;
+            if (da !== db) return db - da;
+            return (appearanceIndex.get(a) || 0) - (appearanceIndex.get(b) || 0);
+        });
+        walker = kids[0] || null;
+        if (mainPath.has(walker)) break;
+    }
+
+    const sideByNode = new Map();
+    const SUBPROCESS_OFFSET = 260;
+
+    function forceRightByTitle(id) {
+        const title = (idToNode.get(id)?.titulo || "").toLowerCase();
+        return title.includes("subsanaci");
+    }
+
+    function assignSide(startId, side) {
+        const queue = [startId];
+        while (queue.length) {
+            const currentId = queue.shift();
+            if (!currentId || mainPath.has(currentId)) continue;
+            if (sideByNode.has(currentId)) continue;
+            const finalSide = forceRightByTitle(currentId) ? 1 : side;
+            sideByNode.set(currentId, finalSide);
+            const kids = Array.from(childrenOf.get(currentId) || []);
+            kids.forEach(kid => {
+                if (!mainPath.has(kid)) queue.push(kid);
+            });
+        }
+    }
+
+    mainPath.forEach(pid => {
+        const branchKids = Array.from(childrenOf.get(pid) || [])
+            .filter(cid => !mainPath.has(cid));
+        let localIndex = 0;
+        branchKids.forEach(cid => {
+            const side = forceRightByTitle(cid) ? 1 : (localIndex % 2 === 0 ? 1 : -1);
+            assignSide(cid, side);
+            localIndex += 1;
+        });
+    });
+
     // Agrupar por nivel
     const levels = [];
     allNodes.forEach(n => {
@@ -696,9 +792,14 @@ if (/^Lanzar tarea\s+/i.test(txt)) {
     const SIDE_PAD    = 80;
 
     const widestCount = Math.max(...levels.filter(Boolean).map(arr => arr.length), 1);
+    const maxSideMagnitude = Math.max(
+        0,
+        ...Array.from(sideByNode.values()).map(v => Math.abs(v))
+    );
+    const sidePadding = maxSideMagnitude * SUBPROCESS_OFFSET;
     const neededLevelWidth = Math.max(
         baseUtilWidth,
-        (widestCount - 1) * MIN_SPACING + 2 * SIDE_PAD
+        (widestCount - 1) * MIN_SPACING + 2 * SIDE_PAD + sidePadding * 2
     );
     const neededContainerWidth = MARGIN + neededLevelWidth + MARGIN;
 
@@ -739,7 +840,7 @@ if (/^Lanzar tarea\s+/i.test(txt)) {
         // Ancho disponible en ESTE nivel (puede crecer según nº de “primos”)
         const levelWidth = Math.max(
             baseUtilWidth,
-            (count - 1) * MIN_SPACING + 2 * SIDE_PAD
+            (count - 1) * MIN_SPACING + 2 * SIDE_PAD + sidePadding * 2
         );
 
         // Spacing horizontal en ESTE nivel
@@ -764,6 +865,9 @@ if (/^Lanzar tarea\s+/i.test(txt)) {
                 .some(tid => (levelOf.get(tid) || 0) < myLevel);
             if (hasBackEdge) {
                 tx += 140;
+            }
+            if (sideByNode.has(nid)) {
+                tx += sideByNode.get(nid) * SUBPROCESS_OFFSET;
             }
 
             // clamp y aplicar

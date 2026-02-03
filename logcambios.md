@@ -1,5 +1,9 @@
 # Historial de cambios
 
+## v1.1.24
+- Separados los subprocesos importados por copypaste respecto a la línea principal, empujándolos a izquierda/derecha para distinguirlos visualmente.
+- Forzada la colocación de los subprocesos de subsanación a la derecha y alternado el lado del resto de ramas para distinguir bucles.
+
 ## v1.1.23
 - Añadido el botón flotante "Importar desde Gestiona" con un modal guiado para importar tesauros, proceso y ficha del procedimiento en secuencia.
 - Incorporada la validación final con resumen para confirmar y montar el proceso completo en la app.
