@@ -1,5 +1,8 @@
 # Historial de cambios
 
+## v1.1.25
+- Reubicados los loops opcionales que vuelven al camino principal para que se dibujen más a los lados con mayor separación horizontal y evitar solapes.
+
 ## v1.1.24
 - Separados los subprocesos importados por copypaste respecto a la línea principal, empujándolos a izquierda/derecha para distinguirlos visualmente.
 - Forzada la colocación de los subprocesos de subsanación a la derecha y alternado el lado del resto de ramas para distinguir bucles.
