@@ -537,6 +537,128 @@ if (importValidateBtn && importModal) {
         alert("Diagrama importado correctamente.");
     });
 }
+
+// ========================================================
+// GUARDAR / CARGAR JSON DESDE BDD (SUPABASE)
+// ========================================================
+const btnSaveJSONDb = document.getElementById("btnSaveJSONDb");
+const btnLoadJSONDb = document.getElementById("btnLoadJSONDb");
+const flowDbModal = document.getElementById("flowDbModal");
+const flowDbSelect = document.getElementById("flowDbSelect");
+const flowDbLoad = document.getElementById("flowDbLoad");
+const flowDbClose = document.getElementById("flowDbClose");
+
+let flowDbItems = [];
+
+const closeFlowDbModal = () => {
+    if (flowDbModal) flowDbModal.classList.add("hidden");
+};
+
+const openFlowDbModal = async () => {
+    if (!flowDbModal || !flowDbSelect) return;
+    flowDbSelect.innerHTML = "";
+    flowDbItems = [];
+
+    try {
+        const response = await fetch("/api/process-flows");
+        const payload = await response.json();
+        if (!response.ok) {
+            throw new Error(payload?.error || "Error al cargar los flujos.");
+        }
+
+        flowDbItems = Array.isArray(payload?.data) ? payload.data : [];
+        if (!flowDbItems.length) {
+            alert("No hay flujos guardados en la base de datos.");
+            return;
+        }
+
+        flowDbItems.forEach((item) => {
+            const option = document.createElement("option");
+            option.value = String(item.id);
+            option.textContent = `${item.nombre || "Sin nombre"} (ID ${item.id})`;
+            flowDbSelect.appendChild(option);
+        });
+
+        flowDbModal.classList.remove("hidden");
+    } catch (error) {
+        console.error("Error cargando flujos desde BDD:", error);
+        alert("❌ No se pudo cargar la lista de flujos. Revisa la consola.");
+    }
+};
+
+if (btnSaveJSONDb) {
+    btnSaveJSONDb.addEventListener("click", async () => {
+        const defaultName = Engine.fichaProyecto?.procedimiento?.trim() || "";
+        const nombre = prompt("Nombre para guardar el flujo en la base de datos:", defaultName);
+        if (!nombre) return;
+
+        const payload = Engine.buildExportPayload();
+
+        try {
+            const response = await fetch("/api/process-flows", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ nombre, flow: payload })
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data?.error || "Error al guardar el flujo.");
+            }
+
+            alert("✅ Flujo guardado correctamente en la base de datos.");
+        } catch (error) {
+            console.error("Error guardando flujo en BDD:", error);
+            alert("❌ No se pudo guardar el flujo. Revisa la consola.");
+        }
+    });
+}
+
+if (btnLoadJSONDb) {
+    btnLoadJSONDb.addEventListener("click", openFlowDbModal);
+}
+
+if (flowDbClose && flowDbModal) {
+    flowDbClose.addEventListener("click", closeFlowDbModal);
+}
+
+if (flowDbModal) {
+    flowDbModal.addEventListener("click", (event) => {
+        if (event.target === flowDbModal) {
+            closeFlowDbModal();
+        }
+    });
+}
+
+if (flowDbLoad && flowDbSelect) {
+    flowDbLoad.addEventListener("click", () => {
+        const selectedId = flowDbSelect.value;
+        const selected = flowDbItems.find((item) => String(item.id) === selectedId);
+
+        if (!selected) {
+            alert("Selecciona un flujo válido.");
+            return;
+        }
+
+        const confirmed = confirm("¿Quieres reemplazar el diagrama actual con el flujo seleccionado?");
+        if (!confirmed) return;
+
+        try {
+            let flowData = selected.flow;
+            if (typeof flowData === "string") {
+                flowData = JSON.parse(flowData);
+            }
+            Engine.importFromJSON(JSON.stringify(flowData));
+            closeFlowDbModal();
+            alert("✅ Flujo cargado correctamente desde la base de datos.");
+        } catch (error) {
+            console.error("Error cargando flujo desde BDD:", error);
+            alert("❌ No se pudo cargar el flujo. Revisa la consola.");
+        }
+    });
+}
    
    /* ========================================================
    DRAG & DROP PARA CREAR NODOS DESDE EL PANEL IZQUIERDO

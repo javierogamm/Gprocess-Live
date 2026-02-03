@@ -30,8 +30,10 @@
                      <!--  Cargar guardar -->
                      <hr>
                      <button class="btn" id="btnExportJSON" onclick="Engine.exportToJSON()">💾 Guardar JSON</button>
+                     <button class="btn" id="btnSaveJSONDb">🗄️ Guardar JSON (BDD)</button>
                      <input type="file" id="fileLoader" accept=".json" style="display:none" onchange="loadJSONFile(event)">
                      <button class="btn" id="btnImportJSON" onclick="document.getElementById('fileLoader').click()">📂 Cargar JSON</button>
+                     <button class="btn" id="btnLoadJSONDb">🗄️ Cargar JSON (BDD)</button>
                      <div class="json-buttons-row">
                         <button id="btnPasteJSON">📋 Pegar JSON</button>
                         <button id="btnIAJson" title="Abrir asistente IA JSON">
@@ -193,6 +195,25 @@
             <textarea id="importTextTextarea" placeholder="Pega aquí la definición de tareas…"></textarea>
             <button id="importTextLoad" class="btn btn-import-load">Cargar</button>
             <div id="importTextSummary" class="csv-content import-text-summary"></div>
+        </div>
+    </div>
+</div>
+
+<!-- =========================
+    MODAL CARGAR JSON DESDE BDD
+========================= -->
+<div id="flowDbModal" class="modal hidden">
+    <div class="modal-content">
+        <div class="csv-modal-header">
+            <h2>Cargar JSON desde base de datos</h2>
+            <button id="flowDbClose" class="csv-close-btn" aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="import-text-body">
+            <label for="flowDbSelect">Selecciona un flujo por nombre</label>
+            <select id="flowDbSelect"></select>
+            <div class="import-text-actions">
+                <button id="flowDbLoad" class="btn">Cargar</button>
+            </div>
         </div>
     </div>
 </div>
