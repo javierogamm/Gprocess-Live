@@ -14,6 +14,19 @@
     <!-- PANEL IZQUIERDO -->
     <div id="leftPanel">
         <div class="left-panel-accordion">
+            <details class="left-panel-section" open>
+                <summary><h2>Usuario</h2></summary>
+                <div class="left-panel-section-body">
+                    <div class="user-status">
+                        <p id="userStatusName">Sin sesión activa.</p>
+                        <div class="user-actions">
+                            <button class="btn" id="btnUserLogin">Iniciar sesión</button>
+                            <button class="btn" id="btnUserEdit" disabled>Editar usuario</button>
+                            <button class="btn btn-secundario" id="btnUserLogout" disabled>Cerrar sesión</button>
+                        </div>
+                    </div>
+                </div>
+            </details>
             <details class="left-panel-section">
                 <summary><h2>Ficha del procedimiento</h2></summary>
                 <div class="left-panel-section-body">
@@ -259,6 +272,27 @@
                     <button id="flowDbPrimaryAction" class="btn btn-flowdb">Guardar</button>
                 </div>
             </section>
+        </div>
+    </div>
+</div>
+
+<!-- =========================
+    MODAL LOGIN / EDICIÓN DE USUARIO
+========================= -->
+<div id="userModal" class="modal hidden">
+    <div class="modal-content user-modal-content">
+        <div class="csv-modal-header">
+            <h2 id="userModalTitle">Iniciar sesión</h2>
+            <button id="userModalClose" class="csv-close-btn" aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="user-modal-body">
+            <label for="userNameInput">Usuario</label>
+            <input id="userNameInput" type="text" placeholder="Nombre de usuario">
+            <label for="userPassInput">Contraseña</label>
+            <input id="userPassInput" type="password" placeholder="Contraseña">
+        </div>
+        <div class="user-modal-actions">
+            <button id="userModalSubmit" class="btn">Ingresar</button>
         </div>
     </div>
 </div>

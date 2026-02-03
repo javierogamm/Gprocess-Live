@@ -539,6 +539,159 @@ if (importValidateBtn && importModal) {
 }
 
 // ========================================================
+// LOGIN / PERFIL DE USUARIO
+// ========================================================
+const USER_STORAGE_KEY = "gprocess.user";
+const userStatusName = document.getElementById("userStatusName");
+const btnUserLogin = document.getElementById("btnUserLogin");
+const btnUserEdit = document.getElementById("btnUserEdit");
+const btnUserLogout = document.getElementById("btnUserLogout");
+const userModal = document.getElementById("userModal");
+const userModalTitle = document.getElementById("userModalTitle");
+const userModalClose = document.getElementById("userModalClose");
+const userNameInput = document.getElementById("userNameInput");
+const userPassInput = document.getElementById("userPassInput");
+const userModalSubmit = document.getElementById("userModalSubmit");
+
+let userModalMode = "login";
+let currentUser = null;
+
+const readStoredUser = () => {
+    try {
+        const stored = localStorage.getItem(USER_STORAGE_KEY);
+        if (!stored) return null;
+        return JSON.parse(stored);
+    } catch (error) {
+        console.warn("No se pudo leer el usuario almacenado.", error);
+        return null;
+    }
+};
+
+const persistUser = (user) => {
+    currentUser = user;
+    if (user) {
+        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+    } else {
+        localStorage.removeItem(USER_STORAGE_KEY);
+    }
+    syncUserUI();
+};
+
+const syncUserUI = () => {
+    const name = currentUser?.name ? currentUser.name : null;
+    if (userStatusName) {
+        userStatusName.textContent = name
+            ? `Sesión iniciada: ${name}`
+            : "Sin sesión activa.";
+    }
+    if (btnUserEdit) btnUserEdit.disabled = !name;
+    if (btnUserLogout) btnUserLogout.disabled = !name;
+    if (btnUserLogin) btnUserLogin.disabled = !!name;
+};
+
+const openUserModal = (mode) => {
+    if (!userModal) return;
+    userModalMode = mode;
+    if (userModalTitle) {
+        userModalTitle.textContent = mode === "edit" ? "Editar usuario" : "Iniciar sesión";
+    }
+    if (userModalSubmit) {
+        userModalSubmit.textContent = mode === "edit" ? "Guardar cambios" : "Ingresar";
+    }
+    if (userNameInput) {
+        userNameInput.value = mode === "edit" ? currentUser?.name || "" : "";
+    }
+    if (userPassInput) {
+        userPassInput.value = "";
+    }
+    userModal.classList.remove("hidden");
+};
+
+const closeUserModal = () => {
+    if (userModal) userModal.classList.add("hidden");
+};
+
+const handleUserSubmit = async () => {
+    const name = userNameInput?.value.trim();
+    const pass = userPassInput?.value.trim();
+
+    if (!name || !pass) {
+        alert("Completa usuario y contraseña.");
+        return;
+    }
+
+    try {
+        const response = await fetch("/api/users", {
+            method: userModalMode === "edit" ? "PUT" : "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(
+                userModalMode === "edit"
+                    ? { id: currentUser?.id, name, pass }
+                    : { name, pass }
+            )
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data?.error || "No se pudo autenticar.");
+        }
+        persistUser(data.user);
+        closeUserModal();
+        alert(
+            userModalMode === "edit"
+                ? "✅ Usuario actualizado correctamente."
+                : "✅ Sesión iniciada correctamente."
+        );
+    } catch (error) {
+        console.error("Error en usuario:", error);
+        alert("❌ No se pudo completar la operación. Revisa la consola.");
+    }
+};
+
+currentUser = readStoredUser();
+syncUserUI();
+
+if (btnUserLogin) {
+    btnUserLogin.addEventListener("click", () => openUserModal("login"));
+}
+
+if (btnUserEdit) {
+    btnUserEdit.addEventListener("click", () => openUserModal("edit"));
+}
+
+if (btnUserLogout) {
+    btnUserLogout.addEventListener("click", () => {
+        persistUser(null);
+        alert("Sesión cerrada.");
+    });
+}
+
+if (userModalClose) {
+    userModalClose.addEventListener("click", closeUserModal);
+}
+
+if (userModal) {
+    userModal.addEventListener("click", (event) => {
+        if (event.target === userModal) {
+            closeUserModal();
+        }
+    });
+}
+
+if (userModalSubmit) {
+    userModalSubmit.addEventListener("click", handleUserSubmit);
+}
+
+if (userPassInput) {
+    userPassInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+            handleUserSubmit();
+        }
+    });
+}
+
+// ========================================================
 // GUARDAR / CARGAR JSON DESDE BDD (SUPABASE)
 // ========================================================
 const btnSaveJSONDb = document.getElementById("btnSaveJSONDb");
@@ -664,7 +817,10 @@ const renderFlowList = () => {
         const dateLabel = item.created_at
             ? new Date(item.created_at).toLocaleString()
             : "Fecha desconocida";
-        meta.textContent = `ID ${item.id} • ${dateLabel}`;
+        const creatorName = item.creador ? String(item.creador).trim() : "";
+        meta.textContent = `ID ${item.id} • ${dateLabel} • Creador: ${
+            creatorName || "Sin asignar"
+        }`;
         info.appendChild(title);
         info.appendChild(meta);
 
@@ -787,6 +943,11 @@ if (flowDbPrimaryAction) {
             alert("Indica un nombre para guardar el flujo.");
             return;
         }
+        if (!currentUser?.name) {
+            alert("Inicia sesión para guardar en base de datos.");
+            openUserModal("login");
+            return;
+        }
 
         const payload = Engine.buildExportPayload();
 
@@ -799,6 +960,7 @@ if (flowDbPrimaryAction) {
                 body: JSON.stringify({
                     nombre,
                     subfuncion: subfuncion || "Sin subfunción",
+                    creador: currentUser.name,
                     flow: payload
                 })
             });

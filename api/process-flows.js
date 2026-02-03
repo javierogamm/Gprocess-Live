@@ -42,7 +42,7 @@ module.exports = async (req, res) => {
     const { id } = req.query || {};
     let query = supabase
       .from("Process_Flows")
-      .select("id, created_at, nombre, subfuncion, flow");
+      .select("id, created_at, nombre, subfuncion, creador, flow");
 
     if (id) {
       query = query.eq("id", id).single();
@@ -71,6 +71,7 @@ module.exports = async (req, res) => {
     const items = normalizePayload(payload).map((item) => ({
       nombre: item.nombre ?? null,
       subfuncion: item.subfuncion ?? null,
+      creador: item.creador ?? null,
       flow: item.flow ?? item,
     }));
 
@@ -81,7 +82,7 @@ module.exports = async (req, res) => {
     const { data, error } = await supabase
       .from("Process_Flows")
       .insert(items)
-      .select("id, created_at, nombre, subfuncion, flow");
+      .select("id, created_at, nombre, subfuncion, creador, flow");
 
     if (error) {
       return res.status(500).json({ error: error.message });
