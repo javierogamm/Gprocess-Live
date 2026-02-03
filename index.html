@@ -200,37 +200,41 @@
 </div>
 
 <!-- =========================
-    MODAL CARGAR JSON DESDE BDD
+    MODAL GUARDAR / CARGAR JSON DESDE BDD
 ========================= -->
 <div id="flowDbModal" class="modal hidden">
-    <div class="modal-content">
-        <div class="csv-modal-header">
-            <h2>Cargar JSON desde base de datos</h2>
+    <div class="modal-content modal-content--wide flow-db-modal">
+        <div class="csv-modal-header flow-db-header">
+            <div class="flow-db-title">
+                <h2 id="flowDbTitle">Guardar JSON en base de datos</h2>
+                <p id="flowDbSubtitle">Organiza los flujos por subfunción.</p>
+            </div>
             <button id="flowDbClose" class="csv-close-btn" aria-label="Cerrar">&times;</button>
         </div>
-        <div class="import-text-body">
-            <label for="flowDbSelect">Selecciona un flujo por nombre</label>
-            <select id="flowDbSelect"></select>
-            <div class="import-text-actions">
-                <button id="flowDbLoad" class="btn">Cargar</button>
-            </div>
-        </div>
-    </div>
-</div>
-<div id="flowDbSaveModal" class="modal hidden">
-    <div class="modal-content">
-        <div class="csv-modal-header">
-            <h2>Guardar JSON en base de datos</h2>
-            <button id="flowDbSaveClose" class="csv-close-btn" aria-label="Cerrar">&times;</button>
-        </div>
-        <div class="import-text-body">
-            <label for="flowDbSaveSelect">Subfunción existente</label>
-            <select id="flowDbSaveSelect"></select>
-            <label for="flowDbSaveInput">Crear nueva subfunción</label>
-            <input id="flowDbSaveInput" type="text" placeholder="Nueva subfunción">
-            <div class="import-text-actions">
-                <button id="flowDbSaveConfirm" class="btn">Guardar</button>
-            </div>
+        <div class="flow-db-body">
+            <aside class="flow-db-sidebar">
+                <div class="flow-db-sidebar-header">
+                    <h3>Subfunciones</h3>
+                    <button id="flowDbNewSubfuncion" class="btn btn-flowdb">Crear subfunción</button>
+                </div>
+                <div id="flowDbFolders" class="flow-db-folders"></div>
+            </aside>
+            <section class="flow-db-content">
+                <div class="flow-db-content-header">
+                    <div class="flow-db-field">
+                        <label for="flowDbSubfuncionInput">Subfunción seleccionada</label>
+                        <input id="flowDbSubfuncionInput" type="text" placeholder="Nombre de subfunción">
+                    </div>
+                    <div class="flow-db-field" id="flowDbNameField">
+                        <label for="flowDbNameInput">Nombre del flujo</label>
+                        <input id="flowDbNameInput" type="text" placeholder="Nombre del flujo">
+                    </div>
+                </div>
+                <div id="flowDbList" class="flow-db-list"></div>
+                <div class="flow-db-actions">
+                    <button id="flowDbPrimaryAction" class="btn btn-flowdb">Guardar</button>
+                </div>
+            </section>
         </div>
     </div>
 </div>

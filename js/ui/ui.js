@@ -544,20 +544,168 @@ if (importValidateBtn && importModal) {
 const btnSaveJSONDb = document.getElementById("btnSaveJSONDb");
 const btnLoadJSONDb = document.getElementById("btnLoadJSONDb");
 const flowDbModal = document.getElementById("flowDbModal");
-const flowDbSelect = document.getElementById("flowDbSelect");
-const flowDbLoad = document.getElementById("flowDbLoad");
 const flowDbClose = document.getElementById("flowDbClose");
+const flowDbTitle = document.getElementById("flowDbTitle");
+const flowDbSubtitle = document.getElementById("flowDbSubtitle");
+const flowDbFolders = document.getElementById("flowDbFolders");
+const flowDbList = document.getElementById("flowDbList");
+const flowDbSubfuncionInput = document.getElementById("flowDbSubfuncionInput");
+const flowDbNameInput = document.getElementById("flowDbNameInput");
+const flowDbNameField = document.getElementById("flowDbNameField");
+const flowDbPrimaryAction = document.getElementById("flowDbPrimaryAction");
+const flowDbNewSubfuncion = document.getElementById("flowDbNewSubfuncion");
 
 let flowDbItems = [];
+let flowDbMode = "load";
+let flowDbSubfunciones = [];
+let flowDbActiveSubfuncion = "";
+let flowDbSelectedId = null;
+
+const normalizeSubfuncion = (value) => {
+    if (typeof value === "string" && value.trim()) {
+        return value.trim();
+    }
+    return "Sin subfunción";
+};
 
 const closeFlowDbModal = () => {
     if (flowDbModal) flowDbModal.classList.add("hidden");
 };
 
-const openFlowDbModal = async () => {
-    if (!flowDbModal || !flowDbSelect) return;
-    flowDbSelect.innerHTML = "";
+const setFlowDbMode = (mode) => {
+    flowDbMode = mode;
+    if (flowDbTitle) {
+        flowDbTitle.textContent =
+            mode === "save" ? "Guardar JSON en base de datos" : "Cargar JSON desde base de datos";
+    }
+    if (flowDbSubtitle) {
+        flowDbSubtitle.textContent =
+            mode === "save"
+                ? "Organiza los flujos en carpetas por subfunción."
+                : "Selecciona una subfunción y el flujo a cargar.";
+    }
+    if (flowDbPrimaryAction) {
+        flowDbPrimaryAction.textContent = mode === "save" ? "Guardar" : "Cargar";
+    }
+    if (flowDbNameField) {
+        flowDbNameField.style.display = mode === "save" ? "flex" : "none";
+    }
+    if (flowDbSubfuncionInput) {
+        flowDbSubfuncionInput.disabled = mode !== "save";
+    }
+    if (flowDbNewSubfuncion) {
+        flowDbNewSubfuncion.style.display = mode === "save" ? "inline-flex" : "none";
+    }
+};
+
+const setActiveSubfuncion = (name) => {
+    flowDbActiveSubfuncion = name;
+    if (flowDbSubfuncionInput) {
+        flowDbSubfuncionInput.value = name;
+    }
+    renderSubfunciones();
+    renderFlowList();
+};
+
+const renderSubfunciones = () => {
+    if (!flowDbFolders) return;
+    flowDbFolders.innerHTML = "";
+    flowDbSubfunciones.forEach((subfuncion) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "flow-db-folder";
+        if (subfuncion === flowDbActiveSubfuncion) {
+            button.classList.add("flow-db-folder--active");
+        }
+        const icon = document.createElement("span");
+        icon.textContent = "📁";
+        const name = document.createElement("span");
+        name.textContent = subfuncion;
+        button.appendChild(icon);
+        button.appendChild(name);
+        button.addEventListener("click", () => {
+            flowDbSelectedId = null;
+            setActiveSubfuncion(subfuncion);
+        });
+        flowDbFolders.appendChild(button);
+    });
+};
+
+const renderFlowList = () => {
+    if (!flowDbList) return;
+    flowDbList.innerHTML = "";
+    const items = flowDbItems.filter(
+        (item) => normalizeSubfuncion(item.subfuncion) === flowDbActiveSubfuncion
+    );
+
+    if (!items.length) {
+        const empty = document.createElement("p");
+        empty.textContent =
+            flowDbMode === "save"
+                ? "No hay flujos en esta subfunción. Guarda uno nuevo."
+                : "No hay flujos disponibles en esta subfunción.";
+        empty.style.color = "#64748b";
+        flowDbList.appendChild(empty);
+        return;
+    }
+
+    items.forEach((item) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "flow-db-item";
+        if (String(item.id) === String(flowDbSelectedId)) {
+            button.classList.add("flow-db-item--active");
+        }
+
+        const info = document.createElement("div");
+        const title = document.createElement("h4");
+        title.textContent = item.nombre || "Sin nombre";
+        const meta = document.createElement("p");
+        const dateLabel = item.created_at
+            ? new Date(item.created_at).toLocaleString()
+            : "Fecha desconocida";
+        meta.textContent = `ID ${item.id} • ${dateLabel}`;
+        info.appendChild(title);
+        info.appendChild(meta);
+
+        const action = document.createElement("span");
+        action.textContent = flowDbMode === "save" ? "Usar nombre" : "Seleccionar";
+        action.style.color = "#94a3b8";
+        action.style.fontSize = "12px";
+
+        button.appendChild(info);
+        button.appendChild(action);
+        button.addEventListener("click", () => {
+            flowDbSelectedId = item.id;
+            if (flowDbMode === "save" && flowDbNameInput) {
+                flowDbNameInput.value = item.nombre || "";
+            }
+            renderFlowList();
+        });
+        flowDbList.appendChild(button);
+    });
+};
+
+const buildSubfuncionesList = (items) => {
+    const names = new Set(items.map((item) => normalizeSubfuncion(item.subfuncion)));
+    if (!names.size) {
+        names.add("Sin subfunción");
+    }
+    flowDbSubfunciones = Array.from(names).sort((a, b) => a.localeCompare(b, "es"));
+};
+
+const openFlowDbModal = async (mode) => {
+    if (!flowDbModal) return;
+    setFlowDbMode(mode);
     flowDbItems = [];
+    flowDbSelectedId = null;
+
+    if (flowDbList) flowDbList.innerHTML = "";
+    if (flowDbFolders) flowDbFolders.innerHTML = "";
+
+    if (flowDbNameInput && mode === "save") {
+        flowDbNameInput.value = Engine.fichaProyecto?.procedimiento?.trim() || "";
+    }
 
     try {
         const response = await fetch("/api/process-flows");
@@ -567,18 +715,13 @@ const openFlowDbModal = async () => {
         }
 
         flowDbItems = Array.isArray(payload?.data) ? payload.data : [];
-        if (!flowDbItems.length) {
+        if (!flowDbItems.length && mode === "load") {
             alert("No hay flujos guardados en la base de datos.");
             return;
         }
 
-        flowDbItems.forEach((item) => {
-            const option = document.createElement("option");
-            option.value = String(item.id);
-            option.textContent = `${item.nombre || "Sin nombre"} (ID ${item.id})`;
-            flowDbSelect.appendChild(option);
-        });
-
+        buildSubfuncionesList(flowDbItems);
+        setActiveSubfuncion(flowDbSubfunciones[0]);
         flowDbModal.classList.remove("hidden");
     } catch (error) {
         console.error("Error cargando flujos desde BDD:", error);
@@ -588,36 +731,14 @@ const openFlowDbModal = async () => {
 
 if (btnSaveJSONDb) {
     btnSaveJSONDb.addEventListener("click", async () => {
-        const defaultName = Engine.fichaProyecto?.procedimiento?.trim() || "";
-        const nombre = prompt("Nombre para guardar el flujo en la base de datos:", defaultName);
-        if (!nombre) return;
-
-        const payload = Engine.buildExportPayload();
-
-        try {
-            const response = await fetch("/api/process-flows", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ nombre, flow: payload })
-            });
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data?.error || "Error al guardar el flujo.");
-            }
-
-            alert("✅ Flujo guardado correctamente en la base de datos.");
-        } catch (error) {
-            console.error("Error guardando flujo en BDD:", error);
-            alert("❌ No se pudo guardar el flujo. Revisa la consola.");
-        }
+        await openFlowDbModal("save");
     });
 }
 
 if (btnLoadJSONDb) {
-    btnLoadJSONDb.addEventListener("click", openFlowDbModal);
+    btnLoadJSONDb.addEventListener("click", async () => {
+        await openFlowDbModal("load");
+    });
 }
 
 if (flowDbClose && flowDbModal) {
@@ -632,31 +753,116 @@ if (flowDbModal) {
     });
 }
 
-if (flowDbLoad && flowDbSelect) {
-    flowDbLoad.addEventListener("click", () => {
-        const selectedId = flowDbSelect.value;
-        const selected = flowDbItems.find((item) => String(item.id) === selectedId);
+if (flowDbPrimaryAction) {
+    flowDbPrimaryAction.addEventListener("click", async () => {
+        if (flowDbMode === "load") {
+            const selected = flowDbItems.find((item) => String(item.id) === String(flowDbSelectedId));
+            if (!selected) {
+                alert("Selecciona un flujo válido.");
+                return;
+            }
 
-        if (!selected) {
-            alert("Selecciona un flujo válido.");
+            const confirmed = confirm("¿Quieres reemplazar el diagrama actual con el flujo seleccionado?");
+            if (!confirmed) return;
+
+            try {
+                let flowData = selected.flow;
+                if (typeof flowData === "string") {
+                    flowData = JSON.parse(flowData);
+                }
+                Engine.importFromJSON(JSON.stringify(flowData));
+                closeFlowDbModal();
+                alert("✅ Flujo cargado correctamente desde la base de datos.");
+            } catch (error) {
+                console.error("Error cargando flujo desde BDD:", error);
+                alert("❌ No se pudo cargar el flujo. Revisa la consola.");
+            }
             return;
         }
 
-        const confirmed = confirm("¿Quieres reemplazar el diagrama actual con el flujo seleccionado?");
-        if (!confirmed) return;
+        const nombre = flowDbNameInput ? flowDbNameInput.value.trim() : "";
+        const subfuncion = flowDbSubfuncionInput ? flowDbSubfuncionInput.value.trim() : "";
+
+        if (!nombre) {
+            alert("Indica un nombre para guardar el flujo.");
+            return;
+        }
+
+        const payload = Engine.buildExportPayload();
 
         try {
-            let flowData = selected.flow;
-            if (typeof flowData === "string") {
-                flowData = JSON.parse(flowData);
+            const response = await fetch("/api/process-flows", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    nombre,
+                    subfuncion: subfuncion || "Sin subfunción",
+                    flow: payload
+                })
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data?.error || "Error al guardar el flujo.");
             }
-            Engine.importFromJSON(JSON.stringify(flowData));
+
+            if (Array.isArray(data?.data) && data.data.length) {
+                flowDbItems = [...flowDbItems, ...data.data];
+                buildSubfuncionesList(flowDbItems);
+                setActiveSubfuncion(normalizeSubfuncion(subfuncion || "Sin subfunción"));
+            }
+
             closeFlowDbModal();
-            alert("✅ Flujo cargado correctamente desde la base de datos.");
+            alert("✅ Flujo guardado correctamente en la base de datos.");
         } catch (error) {
-            console.error("Error cargando flujo desde BDD:", error);
-            alert("❌ No se pudo cargar el flujo. Revisa la consola.");
+            console.error("Error guardando flujo en BDD:", error);
+            alert("❌ No se pudo guardar el flujo. Revisa la consola.");
         }
+    });
+}
+
+if (flowDbNewSubfuncion) {
+    flowDbNewSubfuncion.addEventListener("click", () => {
+        if (flowDbMode !== "save") return;
+        const baseName = "Nueva subfunción";
+        let newName = baseName;
+        let counter = 1;
+        while (flowDbSubfunciones.includes(newName)) {
+            counter += 1;
+            newName = `${baseName} ${counter}`;
+        }
+        flowDbSubfunciones = [...flowDbSubfunciones, newName].sort((a, b) =>
+            a.localeCompare(b, "es")
+        );
+        setActiveSubfuncion(newName);
+        if (flowDbSubfuncionInput) {
+            flowDbSubfuncionInput.focus();
+            flowDbSubfuncionInput.select();
+        }
+    });
+}
+
+if (flowDbSubfuncionInput) {
+    flowDbSubfuncionInput.addEventListener("change", (event) => {
+        if (flowDbMode !== "save") return;
+        const nextName = event.target.value.trim();
+        if (!nextName) {
+            flowDbSubfuncionInput.value = flowDbActiveSubfuncion;
+            return;
+        }
+        if (flowDbSubfunciones.includes(nextName)) {
+            flowDbSubfunciones = flowDbSubfunciones.filter(
+                (name) => name !== flowDbActiveSubfuncion
+            );
+            setActiveSubfuncion(nextName);
+            return;
+        }
+        flowDbSubfunciones = flowDbSubfunciones.map((name) =>
+            name === flowDbActiveSubfuncion ? nextName : name
+        );
+        setActiveSubfuncion(nextName);
     });
 }
    
