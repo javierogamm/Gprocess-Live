@@ -480,6 +480,146 @@ alignSelectedNodes() {
 }
 
 ,
+/* ============================================================
+   REORDENAR FLUJO SELECCIONADO (ABUELO/PADRE/HIJO)
+============================================================ */
+reorderSelectedFlow() {
+    const selectedIds = Array.from(Interactions.selectedNodes || []);
+    if (selectedIds.length < 2) return;
+
+    const selectedSet = new Set(selectedIds);
+    const nodes = selectedIds.map(id => Engine.getNode(id)).filter(Boolean);
+    if (nodes.length < 2) return;
+
+    const connections = this.data.conexiones.filter(
+        c => selectedSet.has(c.from) && selectedSet.has(c.to)
+    );
+
+    const childrenMap = new Map();
+    const parentsMap = new Map();
+    selectedIds.forEach(id => {
+        childrenMap.set(id, []);
+        parentsMap.set(id, []);
+    });
+
+    connections.forEach(conn => {
+        if (childrenMap.has(conn.from)) childrenMap.get(conn.from).push(conn.to);
+        if (parentsMap.has(conn.to)) parentsMap.get(conn.to).push(conn.from);
+    });
+
+    const roots = selectedIds.filter(id => (parentsMap.get(id) || []).length === 0);
+    if (roots.length === 0) roots.push(selectedIds[0]);
+
+    const baseX = Math.min(...nodes.map(n => n.x));
+    const baseY = Math.min(...nodes.map(n => n.y));
+    const verticalGap = 140;
+    const horizontalGap = 220;
+    const lateralGap = 40;
+    const grid = (window.Interactions && Interactions.GRID_SIZE) ? Interactions.GRID_SIZE : 20;
+
+    const placed = new Set();
+
+    const snap = (value) => Math.round(value / grid) * grid;
+
+    const setNodePosition = (node, x, y) => {
+        node.x = snap(x);
+        node.y = snap(y);
+        const div = document.getElementById(node.id);
+        if (div) {
+            div.style.left = node.x + "px";
+            div.style.top = node.y + "px";
+        }
+    };
+
+    const layoutNode = (id, x, y) => {
+        const node = Engine.getNode(id);
+        if (!node) return;
+        setNodePosition(node, x, y);
+        placed.add(id);
+
+        const children = childrenMap.get(id) || [];
+        const nonLeaf = children.filter(ch => (childrenMap.get(ch) || []).length > 0);
+        const leaf = children.filter(ch => (childrenMap.get(ch) || []).length === 0);
+
+        let nextY = y + verticalGap;
+        nonLeaf.forEach(childId => {
+            if (placed.has(childId)) return;
+            layoutNode(childId, x, nextY);
+            nextY += verticalGap;
+        });
+
+        const parentWidth = node.width || 144;
+        leaf.forEach((childId, index) => {
+            if (placed.has(childId)) return;
+            const child = Engine.getNode(childId);
+            const childWidth = child?.width || 144;
+            const leafX = x + parentWidth + horizontalGap + index * (childWidth + lateralGap);
+            layoutNode(childId, leafX, y);
+        });
+    };
+
+    let currentRootY = baseY;
+    roots.forEach(rootId => {
+        if (placed.has(rootId)) return;
+        layoutNode(rootId, baseX, currentRootY);
+        currentRootY += verticalGap * 2;
+    });
+
+    selectedIds.forEach(id => {
+        if (placed.has(id)) return;
+        layoutNode(id, baseX, currentRootY);
+        currentRootY += verticalGap;
+    });
+
+    this.realignConnectionsForSelection(selectedSet);
+    Renderer.redrawConnections();
+    this.saveHistory();
+
+    console.log(`🔃 Reordenado flujo de ${nodes.length} nodos seleccionados.`);
+}
+
+,
+/* ============================================================
+   REALINEAR FLECHAS (handlers) SEGÚN POSICIÓN
+============================================================ */
+realignConnectionsForSelection(selectedSet) {
+    const isSelected = (id) => selectedSet ? selectedSet.has(id) : true;
+    this.data.conexiones.forEach(conn => {
+        if (!isSelected(conn.from) || !isSelected(conn.to)) return;
+
+        const fromNode = Engine.getNode(conn.from);
+        const toNode = Engine.getNode(conn.to);
+        if (!fromNode || !toNode) return;
+
+        const fromCenterX = fromNode.x + (fromNode.width || 144) / 2;
+        const fromCenterY = fromNode.y + (fromNode.height || 68) / 2;
+        const toCenterX = toNode.x + (toNode.width || 144) / 2;
+        const toCenterY = toNode.y + (toNode.height || 68) / 2;
+
+        const dx = toCenterX - fromCenterX;
+        const dy = toCenterY - fromCenterY;
+
+        if (Math.abs(dx) >= Math.abs(dy)) {
+            if (dx >= 0) {
+                conn.fromPos = "right";
+                conn.toPos = "left";
+            } else {
+                conn.fromPos = "left";
+                conn.toPos = "right";
+            }
+        } else {
+            if (dy >= 0) {
+                conn.fromPos = "bottom";
+                conn.toPos = "top";
+            } else {
+                conn.fromPos = "top";
+                conn.toPos = "bottom";
+            }
+        }
+    });
+}
+
+,
     /* ============================================================
        SELECCIÓN DE ELEMENTOS
     ============================================================ */

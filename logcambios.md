@@ -1,5 +1,10 @@
 # Historial de cambios
 
+## v1.1.26
+- Añadido botón en el panel lateral de selección múltiple para reordenar el flujo según dependencias abuelo/padre/hijo.
+- Automatizada la colocación vertical de cadenas y el desplazamiento lateral de nodos hoja al mismo nivel del padre.
+- Reajustada la orientación de flechas entre nodos seleccionados para mantener handlers lógicos (izquierda/derecha/arriba/abajo).
+
 ## v1.1.25
 - Reubicados los loops opcionales que vuelven al camino principal para que se dibujen más a los lados con mayor separación horizontal y evitar solapes.
 

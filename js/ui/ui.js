@@ -1701,6 +1701,24 @@ showGroupProperties() {
     } else {
         btnAlinear.style.display = "block";
     }
+    // 🔃 Botón reordenar flujo
+    let btnReorderFlow = document.getElementById("btnReorderFlow");
+    if (!btnReorderFlow) {
+        btnReorderFlow = document.createElement("button");
+        btnReorderFlow.id = "btnReorderFlow";
+        btnReorderFlow.className = "btn";
+        btnReorderFlow.textContent = "🔃 Reordenar flujo";
+        btnReorderFlow.style.background = "#2ab87dff";
+        btnReorderFlow.style.color = "white";
+        btnReorderFlow.style.width = "100%";
+        btnReorderFlow.style.marginTop = "6px";
+        btnReorderFlow.addEventListener("click", () => {
+            Engine.reorderSelectedFlow();
+        });
+        this.propsEditor.appendChild(btnReorderFlow);
+    } else {
+        btnReorderFlow.style.display = "block";
+    }
 /* ============================================================
    BOTONES: EXPANDIR / CONTRAER NODOS
 ============================================================ */
