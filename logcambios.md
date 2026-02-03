@@ -1,8 +1,5 @@
 # Historial de cambios
 
-## v1.1.19
-- Añadido modal de guardado con selección o creación de subfunción al persistir flujos JSON en base de datos.
-
 ## v1.1.18
 - Añadidos botones para guardar y cargar flujos JSON desde base de datos, con selector por nombre.
 

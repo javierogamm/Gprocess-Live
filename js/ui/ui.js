@@ -547,64 +547,11 @@ const flowDbModal = document.getElementById("flowDbModal");
 const flowDbSelect = document.getElementById("flowDbSelect");
 const flowDbLoad = document.getElementById("flowDbLoad");
 const flowDbClose = document.getElementById("flowDbClose");
-const flowDbSaveModal = document.getElementById("flowDbSaveModal");
-const flowDbSaveSelect = document.getElementById("flowDbSaveSelect");
-const flowDbSaveInput = document.getElementById("flowDbSaveInput");
-const flowDbSaveConfirm = document.getElementById("flowDbSaveConfirm");
-const flowDbSaveClose = document.getElementById("flowDbSaveClose");
 
 let flowDbItems = [];
-let flowDbSubfunciones = [];
 
 const closeFlowDbModal = () => {
     if (flowDbModal) flowDbModal.classList.add("hidden");
-};
-
-const closeFlowDbSaveModal = () => {
-    if (flowDbSaveModal) flowDbSaveModal.classList.add("hidden");
-};
-
-const populateSubfuncionesSelect = () => {
-    if (!flowDbSaveSelect) return;
-    flowDbSaveSelect.innerHTML = "";
-
-    if (!flowDbSubfunciones.length) {
-        const option = document.createElement("option");
-        option.value = "";
-        option.textContent = "Sin subfunciones existentes";
-        flowDbSaveSelect.appendChild(option);
-        return;
-    }
-
-    const emptyOption = document.createElement("option");
-    emptyOption.value = "";
-    emptyOption.textContent = "Selecciona una subfunción";
-    flowDbSaveSelect.appendChild(emptyOption);
-
-    flowDbSubfunciones.forEach((item) => {
-        const option = document.createElement("option");
-        option.value = item;
-        option.textContent = item;
-        flowDbSaveSelect.appendChild(option);
-    });
-};
-
-const fetchSubfunciones = async () => {
-    try {
-        const response = await fetch("/api/process-flows");
-        const payload = await response.json();
-        if (!response.ok) {
-            throw new Error(payload?.error || "Error al cargar las subfunciones.");
-        }
-
-        const items = Array.isArray(payload?.data) ? payload.data : [];
-        flowDbSubfunciones = Array.from(
-            new Set(items.map((item) => item.subfuncion).filter(Boolean))
-        ).sort((a, b) => a.localeCompare(b));
-    } catch (error) {
-        console.error("Error cargando subfunciones:", error);
-        flowDbSubfunciones = [];
-    }
 };
 
 const openFlowDbModal = async () => {
@@ -641,27 +588,9 @@ const openFlowDbModal = async () => {
 
 if (btnSaveJSONDb) {
     btnSaveJSONDb.addEventListener("click", async () => {
-        try {
-            await fetchSubfunciones();
-            populateSubfuncionesSelect();
-            if (flowDbSaveInput) flowDbSaveInput.value = "";
-            if (flowDbSaveModal) flowDbSaveModal.classList.remove("hidden");
-        } catch (error) {
-            console.error("Error preparando guardado en BDD:", error);
-            alert("❌ No se pudo preparar el guardado. Revisa la consola.");
-        }
-    });
-}
-
-if (flowDbSaveConfirm) {
-    flowDbSaveConfirm.addEventListener("click", async () => {
         const defaultName = Engine.fichaProyecto?.procedimiento?.trim() || "";
         const nombre = prompt("Nombre para guardar el flujo en la base de datos:", defaultName);
         if (!nombre) return;
-
-        const selectedSubfuncion = flowDbSaveSelect?.value?.trim() || "";
-        const newSubfuncion = flowDbSaveInput?.value?.trim() || "";
-        const subfuncion = newSubfuncion || selectedSubfuncion || null;
 
         const payload = Engine.buildExportPayload();
 
@@ -671,7 +600,7 @@ if (flowDbSaveConfirm) {
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({ nombre, subfuncion, flow: payload })
+                body: JSON.stringify({ nombre, flow: payload })
             });
             const data = await response.json();
 
@@ -679,7 +608,6 @@ if (flowDbSaveConfirm) {
                 throw new Error(data?.error || "Error al guardar el flujo.");
             }
 
-            closeFlowDbSaveModal();
             alert("✅ Flujo guardado correctamente en la base de datos.");
         } catch (error) {
             console.error("Error guardando flujo en BDD:", error);
@@ -700,18 +628,6 @@ if (flowDbModal) {
     flowDbModal.addEventListener("click", (event) => {
         if (event.target === flowDbModal) {
             closeFlowDbModal();
-        }
-    });
-}
-
-if (flowDbSaveClose && flowDbSaveModal) {
-    flowDbSaveClose.addEventListener("click", closeFlowDbSaveModal);
-}
-
-if (flowDbSaveModal) {
-    flowDbSaveModal.addEventListener("click", (event) => {
-        if (event.target === flowDbSaveModal) {
-            closeFlowDbSaveModal();
         }
     });
 }
