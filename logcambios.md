@@ -1,5 +1,8 @@
 # Historial de cambios
 
+## v1.1.29
+- Compactada la separación vertical del layout importado sin permitir solapes y ampliado un 10% el espaciado horizontal entre nodos.
+
 ## v1.1.28
 - Desplazados los nodos dead end a los lados del tronco al importar por copypaste, manteniendo el nodo final centrado.
 

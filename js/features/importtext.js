@@ -843,7 +843,7 @@ if (/^Lanzar tarea\s+/i.test(txt)) {
     let baseUtilWidth  = Math.max(400, utilRightBase - utilLeftBase);
 
     // ⭐ CAMBIO: si un nivel tiene muchos “primos”, ensanchar el contenedor en X (no en Y)
-    const NODE_GAP_X = 90;
+    const NODE_GAP_X = 99;
     const SIDE_PAD   = 120;
 
     function getLevelMetrics(ids) {
@@ -896,7 +896,7 @@ if (/^Lanzar tarea\s+/i.test(txt)) {
 
     // Vertical (profundidad)
     const TOP_PAD   = 20;
-    const GAP_Y     = 180;
+    const GAP_Y     = 150;
     const startY    = B.minY + TOP_PAD;
 
     // Posicionar por niveles
