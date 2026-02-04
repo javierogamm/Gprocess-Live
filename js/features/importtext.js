@@ -628,34 +628,57 @@ if (/^Lanzar tarea\s+/i.test(txt)) {
         });
     });
 
-    // --- niveles por CAMINO MÁS LARGO (roots → node)
+    // --- niveles por CAMINO MÁS LARGO (roots → node) con control de back-edges
     const levelOf = new Map(); // id -> nivel (0..N)
     (function computeLevelsByLongestPath() {
-        const memo = new Map();
-        const visiting = new Set();
+        const reachMemo = new Map();
 
-        function depth(id) {
-            if (memo.has(id)) return memo.get(id);
-            if (visiting.has(id)) { // ciclo/back-edge durante el cálculo
-                memo.set(id, 0);
-                return 0;
+        function canReach(fromId, targetId, visiting = new Set()) {
+            if (fromId === targetId) return true;
+            const key = `${fromId}->${targetId}`;
+            if (reachMemo.has(key)) return reachMemo.get(key);
+            if (visiting.has(fromId)) {
+                reachMemo.set(key, false);
+                return false;
             }
-            visiting.add(id);
-            const ps = Array.from(parentsOf.get(id) || []);
-            let d;
-            if (ps.length === 0) {
-                d = 0; // raíz
-            } else {
-                let m = 0;
-                for (const pid of ps) m = Math.max(m, depth(pid));
-                d = m + 1;
+            visiting.add(fromId);
+            const kids = Array.from(childrenOf.get(fromId) || []);
+            for (const kid of kids) {
+                if (canReach(kid, targetId, visiting)) {
+                    reachMemo.set(key, true);
+                    visiting.delete(fromId);
+                    return true;
+                }
             }
-            visiting.delete(id);
-            memo.set(id, d);
-            return d;
+            visiting.delete(fromId);
+            reachMemo.set(key, false);
+            return false;
         }
 
-        allNodes.forEach(n => levelOf.set(n.id, depth(n.id)));
+        allNodes.forEach(n => levelOf.set(n.id, 0));
+        const edges = [];
+        allNodes.forEach(parent => {
+            (childrenOf.get(parent.id) || new Set()).forEach(childId => {
+                edges.push({ parentId: parent.id, childId });
+            });
+        });
+
+        const maxIterations = Math.max(1, allNodes.length * 2);
+        for (let iter = 0; iter < maxIterations; iter++) {
+            let changed = false;
+            edges.forEach(({ parentId, childId }) => {
+                const isBackEdge = canReach(childId, parentId);
+                if (isBackEdge) return;
+                const parentLevel = levelOf.get(parentId) || 0;
+                const childLevel = levelOf.get(childId) || 0;
+                const candidate = parentLevel + 1;
+                if (candidate > childLevel) {
+                    levelOf.set(childId, candidate);
+                    changed = true;
+                }
+            });
+            if (!changed) break;
+        }
     })();
 
     // --- detectar camino principal (para separar subprocesos)

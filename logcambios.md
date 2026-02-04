@@ -1,5 +1,8 @@
 # Historial de cambios
 
+## v1.1.27
+- Ajustado el cálculo de niveles al importar por copypaste para garantizar que los hijos no queden por encima de sus padres y evitar que los back-edges arrastren niveles hacia arriba.
+
 ## v1.1.26
 - Recalculada la distribución espacial al importar procesos por copypaste usando únicamente las relaciones "Lanzar tarea", con espaciado dinámico por nivel para evitar solapes.
 - Ampliado el ancho útil del canvas en importaciones con muchos nodos y aplicado un ajuste horizontal por nivel para aprovechar mejor el espacio disponible.
