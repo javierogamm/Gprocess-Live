@@ -1,5 +1,8 @@
 # Historial de cambios
 
+## v1.1.30
+- Reducida un 40% la separación vertical entre niveles al importar procesos por copypaste.
+
 ## v1.1.29
 - Compactada la separación vertical del layout importado sin permitir solapes y ampliado un 10% el espaciado horizontal entre nodos.
 

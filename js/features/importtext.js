@@ -896,7 +896,7 @@ if (/^Lanzar tarea\s+/i.test(txt)) {
 
     // Vertical (profundidad)
     const TOP_PAD   = 20;
-    const GAP_Y     = 150;
+    const GAP_Y     = 90;
     const startY    = B.minY + TOP_PAD;
 
     // Posicionar por niveles
