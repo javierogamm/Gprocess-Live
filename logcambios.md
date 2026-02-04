@@ -1,5 +1,8 @@
 # Historial de cambios
 
+## v1.1.28
+- Desplazados los nodos dead end a los lados del tronco al importar por copypaste, manteniendo el nodo final centrado.
+
 ## v1.1.27
 - Ajustado el cálculo de niveles al importar por copypaste para garantizar que los hijos no queden por encima de sus padres y evitar que los back-edges arrastren niveles hacia arriba.
 

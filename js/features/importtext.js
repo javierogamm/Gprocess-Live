@@ -796,6 +796,20 @@ if (/^Lanzar tarea\s+/i.test(txt)) {
         });
     });
 
+    // Dead ends: llevarlos a los lados del tronco salvo el nodo final
+    const mainPathList = Array.from(mainPath);
+    const endMainId = mainPathList[mainPathList.length - 1] || null;
+    let deadEndIndex = 0;
+    allNodes.forEach(n => {
+        const kids = Array.from(childrenOf.get(n.id) || []);
+        if (kids.length > 0) return;
+        if (n.id === endMainId) return;
+        if (sideByNode.has(n.id)) return;
+        const side = deadEndIndex % 2 === 0 ? 1 : -1;
+        sideByNode.set(n.id, side);
+        deadEndIndex += 1;
+    });
+
     // Agrupar por nivel
     const levels = [];
     allNodes.forEach(n => {
