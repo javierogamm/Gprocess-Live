@@ -1,5 +1,21 @@
 # Historial de cambios
 
+## v1.1.30
+- Reducida un 40% la separación vertical entre niveles al importar procesos por copypaste.
+
+## v1.1.29
+- Compactada la separación vertical del layout importado sin permitir solapes y ampliado un 10% el espaciado horizontal entre nodos.
+
+## v1.1.28
+- Desplazados los nodos dead end a los lados del tronco al importar por copypaste, manteniendo el nodo final centrado.
+
+## v1.1.27
+- Ajustado el cálculo de niveles al importar por copypaste para garantizar que los hijos no queden por encima de sus padres y evitar que los back-edges arrastren niveles hacia arriba.
+
+## v1.1.26
+- Recalculada la distribución espacial al importar procesos por copypaste usando únicamente las relaciones "Lanzar tarea", con espaciado dinámico por nivel para evitar solapes.
+- Ampliado el ancho útil del canvas en importaciones con muchos nodos y aplicado un ajuste horizontal por nivel para aprovechar mejor el espacio disponible.
+
 ## v1.1.25
 - Reubicados los loops opcionales que vuelven al camino principal para que se dibujen más a los lados con mayor separación horizontal y evitar solapes.
 

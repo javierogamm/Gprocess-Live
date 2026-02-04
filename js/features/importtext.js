@@ -628,34 +628,57 @@ if (/^Lanzar tarea\s+/i.test(txt)) {
         });
     });
 
-    // --- niveles por CAMINO MÁS LARGO (roots → node)
+    // --- niveles por CAMINO MÁS LARGO (roots → node) con control de back-edges
     const levelOf = new Map(); // id -> nivel (0..N)
     (function computeLevelsByLongestPath() {
-        const memo = new Map();
-        const visiting = new Set();
+        const reachMemo = new Map();
 
-        function depth(id) {
-            if (memo.has(id)) return memo.get(id);
-            if (visiting.has(id)) { // ciclo/back-edge durante el cálculo
-                memo.set(id, 0);
-                return 0;
+        function canReach(fromId, targetId, visiting = new Set()) {
+            if (fromId === targetId) return true;
+            const key = `${fromId}->${targetId}`;
+            if (reachMemo.has(key)) return reachMemo.get(key);
+            if (visiting.has(fromId)) {
+                reachMemo.set(key, false);
+                return false;
             }
-            visiting.add(id);
-            const ps = Array.from(parentsOf.get(id) || []);
-            let d;
-            if (ps.length === 0) {
-                d = 0; // raíz
-            } else {
-                let m = 0;
-                for (const pid of ps) m = Math.max(m, depth(pid));
-                d = m + 1;
+            visiting.add(fromId);
+            const kids = Array.from(childrenOf.get(fromId) || []);
+            for (const kid of kids) {
+                if (canReach(kid, targetId, visiting)) {
+                    reachMemo.set(key, true);
+                    visiting.delete(fromId);
+                    return true;
+                }
             }
-            visiting.delete(id);
-            memo.set(id, d);
-            return d;
+            visiting.delete(fromId);
+            reachMemo.set(key, false);
+            return false;
         }
 
-        allNodes.forEach(n => levelOf.set(n.id, depth(n.id)));
+        allNodes.forEach(n => levelOf.set(n.id, 0));
+        const edges = [];
+        allNodes.forEach(parent => {
+            (childrenOf.get(parent.id) || new Set()).forEach(childId => {
+                edges.push({ parentId: parent.id, childId });
+            });
+        });
+
+        const maxIterations = Math.max(1, allNodes.length * 2);
+        for (let iter = 0; iter < maxIterations; iter++) {
+            let changed = false;
+            edges.forEach(({ parentId, childId }) => {
+                const isBackEdge = canReach(childId, parentId);
+                if (isBackEdge) return;
+                const parentLevel = levelOf.get(parentId) || 0;
+                const childLevel = levelOf.get(childId) || 0;
+                const candidate = parentLevel + 1;
+                if (candidate > childLevel) {
+                    levelOf.set(childId, candidate);
+                    changed = true;
+                }
+            });
+            if (!changed) break;
+        }
     })();
 
     // --- detectar camino principal (para separar subprocesos)
@@ -773,6 +796,20 @@ if (/^Lanzar tarea\s+/i.test(txt)) {
         });
     });
 
+    // Dead ends: llevarlos a los lados del tronco salvo el nodo final
+    const mainPathList = Array.from(mainPath);
+    const endMainId = mainPathList[mainPathList.length - 1] || null;
+    let deadEndIndex = 0;
+    allNodes.forEach(n => {
+        const kids = Array.from(childrenOf.get(n.id) || []);
+        if (kids.length > 0) return;
+        if (n.id === endMainId) return;
+        if (sideByNode.has(n.id)) return;
+        const side = deadEndIndex % 2 === 0 ? 1 : -1;
+        sideByNode.set(n.id, side);
+        deadEndIndex += 1;
+    });
+
     // Agrupar por nivel
     const levels = [];
     allNodes.forEach(n => {
@@ -806,21 +843,34 @@ if (/^Lanzar tarea\s+/i.test(txt)) {
     let baseUtilWidth  = Math.max(400, utilRightBase - utilLeftBase);
 
     // ⭐ CAMBIO: si un nivel tiene muchos “primos”, ensanchar el contenedor en X (no en Y)
-    const MIN_SPACING = 260;
-    const MAX_SPACING = 420;
-    const SIDE_PAD    = 80;
+    const NODE_GAP_X = 99;
+    const SIDE_PAD   = 120;
 
-    const widestCount = Math.max(...levels.filter(Boolean).map(arr => arr.length), 1);
+    function getLevelMetrics(ids) {
+        let totalWidth = 0;
+        let maxHeight = 0;
+        ids.forEach((nid, idx) => {
+            const { w, h } = getNodeSize(idToNode.get(nid));
+            totalWidth += w;
+            if (idx > 0) totalWidth += NODE_GAP_X;
+            maxHeight = Math.max(maxHeight, h);
+        });
+        return { totalWidth, maxHeight };
+    }
+
     const maxSideMagnitude = Math.max(
         0,
         ...Array.from(sideByNode.values()).map(v => Math.abs(v))
     );
     const sidePadding = maxSideMagnitude * SUBPROCESS_OFFSET;
-    const neededLevelWidth = Math.max(
+    const maxLevelWidth = Math.max(
         baseUtilWidth,
-        (widestCount - 1) * MIN_SPACING + 2 * SIDE_PAD + sidePadding * 2
+        ...levels.filter(Boolean).map(ids => {
+            const metrics = getLevelMetrics(ids);
+            return metrics.totalWidth + 2 * SIDE_PAD + sidePadding * 2;
+        })
     );
-    const neededContainerWidth = MARGIN + neededLevelWidth + MARGIN;
+    const neededContainerWidth = MARGIN + maxLevelWidth + MARGIN;
 
     if (container) {
         const currentW = container.scrollWidth || container.clientWidth || 0;
@@ -846,56 +896,73 @@ if (/^Lanzar tarea\s+/i.test(txt)) {
 
     // Vertical (profundidad)
     const TOP_PAD   = 20;
-    const BOTTOM_PAD= 20;
-    const GAP_Y     = 180;
+    const GAP_Y     = 90;
     const startY    = B.minY + TOP_PAD;
-    const levelGapY = GAP_Y;
 
     // Posicionar por niveles
-    levels.forEach((ids, lv) => {
+    let currentY = startY;
+    levels.forEach((ids) => {
         if (!ids || !ids.length) return;
-        const count = ids.length;
+        const metrics = getLevelMetrics(ids);
+        const levelWidth = Math.max(baseUtilWidth, metrics.totalWidth + 2 * SIDE_PAD + sidePadding * 2);
+        const levelLeft = utilLeftBase + (levelWidth - metrics.totalWidth) / 2;
 
-        // Ancho disponible en ESTE nivel (puede crecer según nº de “primos”)
-        const levelWidth = Math.max(
-            baseUtilWidth,
-            (count - 1) * MIN_SPACING + 2 * SIDE_PAD + sidePadding * 2
-        );
-
-        // Spacing horizontal en ESTE nivel
-        const spacing = count > 1
-            ? Math.min(MAX_SPACING, Math.max(MIN_SPACING, levelWidth / (count - 1)))
-            : MIN_SPACING;
-
-        const centerX = utilLeftBase + levelWidth / 2;
-        const targetY = startY + lv * levelGapY;
-
-        ids.forEach((nid, idx) => {
+        const preferred = ids.map((nid) => {
             const n = idToNode.get(nid);
-            const { w, h } = getNodeSize(n);
+            const { w } = getNodeSize(n);
+            return { id: nid, node: n, w, preferredX: 0 };
+        });
 
-            const targetCenterX = centerX - ((count - 1) * spacing) / 2 + idx * spacing;
-            let tx = targetCenterX - w / 2;
-            let ty = targetY;
+        let cursorX = levelLeft;
+        preferred.forEach((item) => {
+            item.preferredX = cursorX;
+            cursorX += item.w + NODE_GAP_X;
+        });
 
-            // ⭐ CAMBIO: ligero empuje a la derecha si hay back-edge a ancestro (sin cambiar nivel)
+        preferred.forEach((item) => {
+            const nid = item.id;
             const myLevel = levelOf.get(nid) || 0;
             const hasBackEdge = Array.from(childrenOf.get(nid) || [])
                 .some(tid => (levelOf.get(tid) || 0) < myLevel);
             if (hasBackEdge) {
-                tx += 140;
+                item.preferredX += 140;
             }
             if (sideByNode.has(nid)) {
-                tx += sideByNode.get(nid) * SUBPROCESS_OFFSET;
+                item.preferredX += sideByNode.get(nid) * SUBPROCESS_OFFSET;
             }
-
-            // clamp y aplicar
-            const cl = clampPosition(tx, ty, n);
-            n.x = cl.x; n.y = cl.y;
-
-            const div = document.getElementById(n.id);
-            if (div) { div.style.left = n.x + "px"; div.style.top = n.y + "px"; }
         });
+
+        preferred.sort((a, b) => a.preferredX - b.preferredX);
+
+        let prevRight = -Infinity;
+        preferred.forEach((item) => {
+            const minX = prevRight === -Infinity ? item.preferredX : prevRight + NODE_GAP_X;
+            item.x = Math.max(item.preferredX, minX);
+            prevRight = item.x + item.w;
+        });
+
+        let levelMinX = Infinity;
+        let levelMaxX = -Infinity;
+        preferred.forEach((item) => {
+            levelMinX = Math.min(levelMinX, item.x);
+            levelMaxX = Math.max(levelMaxX, item.x + item.w);
+        });
+        const spanWidth = levelMaxX - levelMinX;
+        const availableLeft = utilLeftBase;
+        const targetLeft = availableLeft + (levelWidth - spanWidth) / 2;
+        const shift = targetLeft - levelMinX;
+
+        preferred.forEach((item) => {
+            let tx = item.x + shift;
+            const ty = currentY;
+            const cl = clampPosition(tx, ty, item.node);
+            item.node.x = cl.x;
+            item.node.y = cl.y;
+            const div = document.getElementById(item.node.id);
+            if (div) { div.style.left = item.node.x + "px"; div.style.top = item.node.y + "px"; }
+        });
+
+        currentY += metrics.maxHeight + GAP_Y;
     });
 
     // (Opcional) Forzar conexiones verticales
