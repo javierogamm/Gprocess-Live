@@ -618,6 +618,7 @@ const MiniMap = {
               toggleRightPanel(false);
               Renderer.highlightConnectionsForNode([]);
             }
+            this.applyCanvasSelectionHighlight(nodeEl);
           }
         } else if (window.Interactions?.selectedNodes) {
           Interactions.selectedNodes.forEach((id) => {
@@ -632,8 +633,10 @@ const MiniMap = {
           }
           Renderer.highlightConnectionsForNode(Array.from(Interactions.selectedNodes));
           toggleRightPanel(true);
+          this.applyCanvasSelectionHighlight(nodeEl);
         } else if (Engine?.selectNode) {
           Engine.selectNode(nodo.id);
+          this.applyCanvasSelectionHighlight(nodeEl);
         }
       });
 
@@ -674,6 +677,17 @@ const MiniMap = {
   setSelectedConnection(connId) {
     this.selectedConnection = connId;
     this.scheduleRender();
+  },
+
+  applyCanvasSelectionHighlight(nodeEl) {
+    if (!nodeEl) return;
+    if (Renderer?.LineEditor?.clear) {
+      Renderer.LineEditor.clear();
+    }
+    document
+      .querySelectorAll(".connection-line.selected-conn, .conn-path.selected-conn")
+      .forEach((el) => el.classList.remove("selected-conn"));
+    nodeEl.classList.add("highlighted-node");
   }
 };
 
