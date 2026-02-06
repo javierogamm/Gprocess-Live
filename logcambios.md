@@ -1,5 +1,8 @@
 # Historial de cambios
 
+## v1.1.35
+- Sincronizada la selección real de nodos al navegar desde el minimapa, incluyendo la selección múltiple con Ctrl/Cmd clic.
+
 ## v1.1.34
 - Corregido el arrastre del viewport del minimapa para mover el canvas real desde el rectángulo de vista.
 

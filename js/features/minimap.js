@@ -561,9 +561,9 @@ const MiniMap = {
         const scrollToX = nodo.x + (nodo.width || 144) / 2 - canvas.clientWidth / 2;
         const scrollToY = nodo.y + (nodo.height || 68) / 2 - canvas.clientHeight / 2;
         canvas.scrollTo({ left: scrollToX, top: scrollToY, behavior: "smooth" });
+        const nodeEl = document.getElementById(nodo.id);
         if (event.ctrlKey || event.metaKey) {
           if (window.Interactions?.selectedNodes) {
-            const nodeEl = document.getElementById(nodo.id);
             if (Interactions.selectedNodes.has(nodo.id)) {
               Interactions.selectedNodes.delete(nodo.id);
               nodeEl?.classList.remove("selected-multi");
@@ -573,14 +573,30 @@ const MiniMap = {
             }
             if (Interactions.selectedNodes.size > 1) {
               UI.showGroupProperties();
+              Renderer.highlightConnectionsForNode(Array.from(Interactions.selectedNodes));
             } else if (Interactions.selectedNodes.size === 1) {
               const unico = Array.from(Interactions.selectedNodes)[0];
               Engine.selectNode(unico);
               Renderer.highlightConnectionsForNode([unico]);
+              toggleRightPanel(true);
             } else {
               toggleRightPanel(false);
+              Renderer.highlightConnectionsForNode([]);
             }
           }
+        } else if (window.Interactions?.selectedNodes) {
+          Interactions.selectedNodes.forEach((id) => {
+            const selectedEl = document.getElementById(id);
+            selectedEl?.classList.remove("selected-multi");
+          });
+          Interactions.selectedNodes.clear();
+          Interactions.selectedNodes.add(nodo.id);
+          nodeEl?.classList.add("selected-multi");
+          if (Engine?.selectNode) {
+            Engine.selectNode(nodo.id);
+          }
+          Renderer.highlightConnectionsForNode(Array.from(Interactions.selectedNodes));
+          toggleRightPanel(true);
         } else if (Engine?.selectNode) {
           Engine.selectNode(nodo.id);
         }
