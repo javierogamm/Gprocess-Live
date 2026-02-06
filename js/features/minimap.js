@@ -683,8 +683,8 @@ const MiniMap = {
       .querySelectorAll(".connection-line.selected-conn, .conn-path.selected-conn")
       .forEach((el) => el.classList.remove("selected-conn"));
     document
-      .querySelectorAll(".node.highlighted-node")
-      .forEach((el) => el.classList.remove("highlighted-node"));
+      .querySelectorAll(".node.highlighted-node, .node.selected-multi")
+      .forEach((el) => el.classList.remove("highlighted-node", "selected-multi"));
     const ids = Array.isArray(nodeIds)
       ? nodeIds
       : nodeIds instanceof Set
@@ -694,7 +694,7 @@ const MiniMap = {
           : [];
     ids.forEach((id) => {
       const nodeEl = document.getElementById(id);
-      nodeEl?.classList.add("highlighted-node");
+      nodeEl?.classList.add("highlighted-node", "selected-multi");
     });
     if (Renderer?.highlightConnectionsForNode) {
       Renderer.highlightConnectionsForNode(ids);
