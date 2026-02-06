@@ -58,7 +58,8 @@
 /* 🔹 Transición suave para todos los botones */
 .floating-assign-btn,
 .floating-cambios-btn,
-.floating-tesauro-btn {
+.floating-tesauro-btn,
+.floating-minimap-btn {
   transition: right 0.3s ease;
 }
 
@@ -67,15 +68,19 @@
 #rightPanel.visible ~ .floating-assign-btn,
 #rightPanel.visible ~ .floating-cambios-btn,
 #rightPanel.visible ~ .floating-tesauro-btn,
+#rightPanel.visible ~ .floating-minimap-btn,
 .assign-panel.visible ~ .floating-assign-btn,
 .assign-panel.visible ~ .floating-cambios-btn,
 .assign-panel.visible ~ .floating-tesauro-btn,
+.assign-panel.visible ~ .floating-minimap-btn,
 .cambios-panel.visible ~ .floating-assign-btn,
 .cambios-panel.visible ~ .floating-cambios-btn,
 .cambios-panel.visible ~ .floating-tesauro-btn,
+.cambios-panel.visible ~ .floating-minimap-btn,
 .tesauro-panel.visible ~ .floating-assign-btn,
 .tesauro-panel.visible ~ .floating-cambios-btn,
-.tesauro-panel.visible ~ .floating-tesauro-btn {
+.tesauro-panel.visible ~ .floating-tesauro-btn,
+.tesauro-panel.visible ~ .floating-minimap-btn {
   right: 360px;
 }
 /* ============================================================
