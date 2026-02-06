@@ -77,6 +77,10 @@ const MiniMap = {
     this.attachScrollHandler();
     this.attachSelectionSync();
     this.patchCoreHooks();
+
+    this.windowEl.classList.add("visible");
+    this.render();
+    this.updateViewport();
   },
 
   attachDragHandlers() {

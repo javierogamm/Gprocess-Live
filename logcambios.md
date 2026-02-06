@@ -1,5 +1,9 @@
 # Historial de cambios
 
+## v1.1.37
+- Iniciado el acordeón de Usuario colapsado por defecto.
+- Mostrado el minimapa desde el arranque con tamaño 300x300 y posición inferior derecha.
+
 ## v1.1.36
 - Añadidas etiquetas abreviadas en los nodos del minimapa para identificar tipos (CR, DOC, FOR, LIB, OP) e icono de reloj de arena para plazo.
 
