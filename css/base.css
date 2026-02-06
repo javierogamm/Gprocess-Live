@@ -1208,7 +1208,7 @@ input {
   inset: 0;
 }
 .minimap-body .minimap-nodes {
-  pointer-events: none;
+  pointer-events: auto;
 }
 .minimap-viewport {
   position: absolute;
@@ -1219,9 +1219,12 @@ input {
 }
 .minimap-node {
   position: absolute;
-  background: #9ca3af;
+  background: transparent;
+  border: none;
+  padding: 0;
   border-radius: 2px;
   opacity: 0.85;
+  cursor: pointer;
 }
 .minimap-node.selected {
   background: #e11d48;

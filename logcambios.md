@@ -1,5 +1,9 @@
 # Historial de cambios
 
+## v1.1.32
+- Ajustado el minimapa para dibujar conexiones con el mismo trazado ortogonal del canvas y permitir navegación al seleccionar nodos.
+- Añadidas formas miniaturizadas por tipo de nodo y soporte de selección múltiple en el minimapa.
+
 ## v1.1.31
 - Añadido el minimapa flotante del procedimiento con vista miniaturizada, resaltado de selección y marcador del viewport visible.
 - Incorporado el botón flotante "Minimap" debajo de Tesauro y habilitado el redimensionado/arrastre de la ventana.

@@ -139,8 +139,7 @@ const MiniMap = {
       const oldSelectNode = Engine.selectNode;
       Engine.selectNode = (id) => {
         oldSelectNode.call(Engine, id);
-        this.setSelectedNodes(id ? [id] : []);
-        this.setSelectedConnection(null);
+        this.syncSelectionFromState();
       };
     }
 
@@ -148,8 +147,7 @@ const MiniMap = {
       const oldSelectConnection = Engine.selectConnection;
       Engine.selectConnection = (connId) => {
         oldSelectConnection.call(Engine, connId);
-        this.setSelectedConnection(connId);
-        this.setSelectedNodes([]);
+        this.syncSelectionFromState();
       };
     }
 
@@ -233,6 +231,179 @@ const MiniMap = {
     return { minX, minY, maxX, maxY };
   },
 
+  getHandleCoordinatesFromNode(node, side) {
+    const width = node.width || 144;
+    const height = node.height || 68;
+    const cx = node.x + width / 2;
+    const cy = node.y + height / 2;
+
+    switch (side) {
+      case "top":
+        return { x: cx, y: node.y };
+      case "bottom":
+        return { x: cx, y: node.y + height };
+      case "left":
+        return { x: node.x, y: cy };
+      case "right":
+        return { x: node.x + width, y: cy };
+      default:
+        return { x: cx, y: cy };
+    }
+  },
+
+  scalePathData(d) {
+    if (!d) return "";
+    const nums = d.match(/-?\d+(\.\d+)?/g);
+    if (!nums) return d;
+    let i = 0;
+    return d.replace(/-?\d+(\.\d+)?/g, () => {
+      const value = parseFloat(nums[i++]);
+      if (Number.isNaN(value)) return value;
+      if (i % 2 === 1) {
+        return ((value - this.bounds.minX) * this.scale).toFixed(2);
+      }
+      return ((value - this.bounds.minY) * this.scale).toFixed(2);
+    });
+  },
+
+  renderMiniShape(svg, nodo, width, height) {
+    const fillBase = nodo.color || "#dff3f9";
+    const strokeBase = "#2f6f82";
+    const strokeWidth = Math.max(1, width * 0.03);
+
+    const create = (tag) => document.createElementNS("http://www.w3.org/2000/svg", tag);
+
+    if (nodo.tipo === "formulario") {
+      const r = create("rect");
+      const rx = Math.min(width, height) * 0.18;
+      r.setAttribute("x", 1);
+      r.setAttribute("y", 1);
+      r.setAttribute("width", width - 2);
+      r.setAttribute("height", height - 2);
+      r.setAttribute("rx", rx);
+      r.setAttribute("ry", rx);
+      r.setAttribute("fill", fillBase);
+      r.setAttribute("stroke", strokeBase);
+      r.setAttribute("stroke-width", strokeWidth);
+      svg.appendChild(r);
+      return;
+    }
+
+    if (nodo.tipo === "documento") {
+      const path = create("path");
+      const d = `
+        M 2 2
+        H ${width - 2}
+        V ${height - 10}
+        C ${width * 0.65} ${height - 18}, ${width * 0.4} ${height + 4}, 2 ${height - 8}
+        Z
+      `;
+      path.setAttribute("d", d);
+      path.setAttribute("fill", fillBase);
+      path.setAttribute("stroke", strokeBase);
+      path.setAttribute("stroke-width", strokeWidth);
+      svg.appendChild(path);
+      return;
+    }
+
+    if (nodo.tipo === "decision") {
+      const path = create("path");
+      const d = `
+        M ${width / 2} 2
+        L ${width - 2} ${height / 2}
+        L ${width / 2} ${height - 2}
+        L 2 ${height / 2}
+        Z
+      `;
+      path.setAttribute("d", d);
+      path.setAttribute("fill", fillBase);
+      path.setAttribute("stroke", strokeBase);
+      path.setAttribute("stroke-width", strokeWidth);
+      svg.appendChild(path);
+      return;
+    }
+
+    if (nodo.tipo === "plazo") {
+      const circle = create("circle");
+      circle.setAttribute("cx", width / 2);
+      circle.setAttribute("cy", height / 2);
+      circle.setAttribute("r", Math.min(width, height) / 2 - 2);
+      circle.setAttribute("fill", fillBase);
+      circle.setAttribute("stroke", strokeBase);
+      circle.setAttribute("stroke-width", strokeWidth);
+      svg.appendChild(circle);
+      return;
+    }
+
+    if (nodo.tipo === "operacion_externa") {
+      const body = create("rect");
+      const rx = Math.min(width, height) * 0.18;
+      body.setAttribute("x", 2);
+      body.setAttribute("y", height * 0.2);
+      body.setAttribute("width", width - 4);
+      body.setAttribute("height", height * 0.6);
+      body.setAttribute("rx", rx);
+      body.setAttribute("ry", rx);
+      body.setAttribute("fill", fillBase);
+      body.setAttribute("stroke", strokeBase);
+      body.setAttribute("stroke-width", strokeWidth);
+      svg.appendChild(body);
+
+      const top = create("ellipse");
+      top.setAttribute("cx", width / 2);
+      top.setAttribute("cy", height * 0.2);
+      top.setAttribute("rx", width * 0.48);
+      top.setAttribute("ry", height * 0.18);
+      top.setAttribute("fill", fillBase);
+      top.setAttribute("stroke", strokeBase);
+      top.setAttribute("stroke-width", strokeWidth);
+      svg.appendChild(top);
+      return;
+    }
+
+    if (nodo.tipo === "libre") {
+      const el = create("ellipse");
+      el.setAttribute("cx", width / 2);
+      el.setAttribute("cy", height / 2);
+      el.setAttribute("rx", width / 2 - 2);
+      el.setAttribute("ry", height / 2 - 2);
+      el.setAttribute("fill", fillBase);
+      el.setAttribute("stroke", strokeBase);
+      el.setAttribute("stroke-width", strokeWidth);
+      svg.appendChild(el);
+      return;
+    }
+
+    if (nodo.tipo === "circuito") {
+      const poly = create("polygon");
+      const inset = Math.min(width, height) * 0.12;
+      const points = `
+        ${inset},${inset}
+        ${width - inset},${inset}
+        ${width - inset * 0.6},${height - inset}
+        ${inset * 0.6},${height - inset}
+      `;
+      poly.setAttribute("points", points);
+      poly.setAttribute("fill", fillBase);
+      poly.setAttribute("stroke", strokeBase);
+      poly.setAttribute("stroke-width", strokeWidth);
+      svg.appendChild(poly);
+      return;
+    }
+
+    const rect = create("rect");
+    rect.setAttribute("x", 1);
+    rect.setAttribute("y", 1);
+    rect.setAttribute("width", width - 2);
+    rect.setAttribute("height", height - 2);
+    rect.setAttribute("rx", Math.min(width, height) * 0.1);
+    rect.setAttribute("ry", Math.min(width, height) * 0.1);
+    rect.setAttribute("fill", fillBase);
+    rect.setAttribute("stroke", strokeBase);
+    rect.setAttribute("stroke-width", strokeWidth);
+    svg.appendChild(rect);
+  },
+
   render() {
     if (!this.windowEl.classList.contains("visible")) return;
     this.bounds = this.computeBounds();
@@ -258,16 +429,24 @@ const MiniMap = {
       const toNode = Engine.getNode(conn.to);
       if (!fromNode || !toNode) return;
 
-      const fromX = (fromNode.x + (fromNode.width || 144) / 2 - this.bounds.minX) * this.scale;
-      const fromY = (fromNode.y + (fromNode.height || 68) / 2 - this.bounds.minY) * this.scale;
-      const toX = (toNode.x + (toNode.width || 144) / 2 - this.bounds.minX) * this.scale;
-      const toY = (toNode.y + (toNode.height || 68) / 2 - this.bounds.minY) * this.scale;
+      const from = this.getHandleCoordinatesFromNode(fromNode, conn.fromPos);
+      const to = this.getHandleCoordinatesFromNode(toNode, conn.toPos);
 
-      const path = document.createElementNS("http://www.w3.org/2000/svg", "line");
-      path.setAttribute("x1", fromX);
-      path.setAttribute("y1", fromY);
-      path.setAttribute("x2", toX);
-      path.setAttribute("y2", toY);
+      const OFFSET = 14;
+      let adjToX = to.x;
+      let adjToY = to.y;
+      if (conn.toPos === "top") adjToY += OFFSET;
+      if (conn.toPos === "bottom") adjToY -= OFFSET;
+      if (conn.toPos === "left") adjToX += OFFSET;
+      if (conn.toPos === "right") adjToX -= OFFSET;
+
+      const basePath = Renderer?.generateOrthogonalPath
+        ? Renderer.generateOrthogonalPath(from, { x: adjToX, y: adjToY }, conn.fromPos, conn.toPos)
+        : `M ${from.x} ${from.y} L ${adjToX} ${adjToY}`;
+      const scaledPath = this.scalePathData(basePath);
+
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", scaledPath);
       path.classList.add("minimap-connection");
       if (conn.id === this.selectedConnection) {
         path.classList.add("selected");
@@ -276,9 +455,10 @@ const MiniMap = {
     });
 
     (Engine?.data?.nodos || []).forEach((nodo) => {
-      const nodeDiv = document.createElement("div");
-      const width = (nodo.width || 144) * this.scale;
-      const height = (nodo.height || 68) * this.scale;
+      const nodeDiv = document.createElement("button");
+      nodeDiv.type = "button";
+      const nodeWidth = (nodo.width || 144) * this.scale;
+      const nodeHeight = (nodo.height || 68) * this.scale;
       const x = (nodo.x - this.bounds.minX) * this.scale;
       const y = (nodo.y - this.bounds.minY) * this.scale;
       nodeDiv.className = "minimap-node";
@@ -288,9 +468,28 @@ const MiniMap = {
       Object.assign(nodeDiv.style, {
         left: `${x}px`,
         top: `${y}px`,
-        width: `${width}px`,
-        height: `${height}px`
+        width: `${nodeWidth}px`,
+        height: `${nodeHeight}px`
       });
+      nodeDiv.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const canvas = document.getElementById("canvasArea");
+        if (!canvas) return;
+        const scrollToX = nodo.x + (nodo.width || 144) / 2 - canvas.clientWidth / 2;
+        const scrollToY = nodo.y + (nodo.height || 68) / 2 - canvas.clientHeight / 2;
+        canvas.scrollTo({ left: scrollToX, top: scrollToY, behavior: "smooth" });
+        if (Engine?.selectNode) {
+          Engine.selectNode(nodo.id);
+        }
+      });
+
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("width", "100%");
+      svg.setAttribute("height", "100%");
+      svg.setAttribute("viewBox", `0 0 ${nodeWidth} ${nodeHeight}`);
+      this.renderMiniShape(svg, nodo, nodeWidth, nodeHeight);
+      nodeDiv.appendChild(svg);
+
       this.nodesLayer.appendChild(nodeDiv);
     });
   },
