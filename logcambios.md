@@ -1,5 +1,8 @@
 # Historial de cambios
 
+## v1.1.38
+- Sincronizado el resaltado visual del canvas al seleccionar nodos desde el minimapa (nodo activo y conexiones) para que se comporte como el clic directo en el canvas.
+
 ## v1.1.37
 - Iniciado el acordeón de Usuario colapsado por defecto.
 - Mostrado el minimapa desde el arranque con tamaño 300x300 y posición inferior derecha.
