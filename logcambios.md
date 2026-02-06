@@ -1,5 +1,9 @@
 # Historial de cambios
 
+## v1.1.31
+- Añadido el minimapa flotante del procedimiento con vista miniaturizada, resaltado de selección y marcador del viewport visible.
+- Incorporado el botón flotante "Minimap" debajo de Tesauro y habilitado el redimensionado/arrastre de la ventana.
+
 ## v1.1.30
 - Reducida un 40% la separación vertical entre niveles al importar procesos por copypaste.
 

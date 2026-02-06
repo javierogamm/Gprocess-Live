@@ -1139,6 +1139,104 @@ input {
 }
 .floating-tesauro-btn:hover { background: #c63c45; }
 
+/* 🔘 Botón flotante Minimap */
+.floating-minimap-btn {
+  position: fixed;
+  top: 150px;           /* debajo del botón de Tesauro */
+  right: 80px;
+  z-index: 2000;
+  background: #E34850;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+}
+.floating-minimap-btn:hover { background: #c63c45; }
+
+.minimap-window {
+  position: fixed;
+  top: 210px;
+  right: 80px;
+  width: 300px;
+  height: 300px;
+  background: rgba(255,255,255,0.96);
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+  z-index: 2100;
+  display: none;
+  overflow: hidden;
+  resize: both;
+  min-width: 180px;
+  min-height: 180px;
+}
+.minimap-window.visible { display: block; }
+.minimap-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: #f3f4f6;
+  border-bottom: 1px solid #e5e7eb;
+  cursor: move;
+  user-select: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.minimap-close {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  color: #374151;
+}
+.minimap-body {
+  position: relative;
+  width: 100%;
+  height: calc(100% - 32px);
+  overflow: hidden;
+  background: #f8fafc;
+}
+.minimap-body .minimap-svg,
+.minimap-body .minimap-nodes {
+  position: absolute;
+  inset: 0;
+}
+.minimap-body .minimap-nodes {
+  pointer-events: none;
+}
+.minimap-viewport {
+  position: absolute;
+  border: 2px solid rgba(227,72,80,0.9);
+  background: rgba(227,72,80,0.08);
+  pointer-events: none;
+  box-sizing: border-box;
+}
+.minimap-node {
+  position: absolute;
+  background: #9ca3af;
+  border-radius: 2px;
+  opacity: 0.85;
+}
+.minimap-node.selected {
+  background: #e11d48;
+  box-shadow: 0 0 6px rgba(225,29,72,0.8);
+}
+.minimap-connection {
+  stroke: #6b7280;
+  stroke-width: 1;
+  fill: none;
+}
+.minimap-connection.selected {
+  stroke: #e11d48;
+  stroke-width: 2;
+}
+
 .tesauro-panel {
   position: fixed;
   top: 0;
