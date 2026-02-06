@@ -1,5 +1,8 @@
 # Historial de cambios
 
+## v1.1.36
+- Añadidas etiquetas abreviadas en los nodos del minimapa para identificar tipos (CR, DOC, FOR, LIB, OP) e icono de reloj de arena para plazo.
+
 ## v1.1.35
 - Sincronizada la selección real de nodos al navegar desde el minimapa, incluyendo la selección múltiple con Ctrl/Cmd clic.
 

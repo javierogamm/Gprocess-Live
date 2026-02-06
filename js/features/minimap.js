@@ -333,8 +333,31 @@ const MiniMap = {
     const fillBase = nodo.color || "#dff3f9";
     const strokeBase = "#2f6f82";
     const strokeWidth = Math.max(1, width * 0.03);
+    const labelMap = {
+      circuito: "CR",
+      documento: "DOC",
+      formulario: "FOR",
+      plazo: "⌛",
+      libre: "LIB",
+      operacion_externa: "OP"
+    };
+    const label = labelMap[nodo.tipo] || "";
 
     const create = (tag) => document.createElementNS("http://www.w3.org/2000/svg", tag);
+    const addLabel = () => {
+      if (!label) return;
+      const text = create("text");
+      const fontSize = Math.max(8, Math.min(width, height) * 0.28);
+      text.setAttribute("x", width / 2);
+      text.setAttribute("y", height / 2);
+      text.setAttribute("text-anchor", "middle");
+      text.setAttribute("dominant-baseline", "middle");
+      text.setAttribute("font-size", fontSize);
+      text.setAttribute("font-weight", "700");
+      text.setAttribute("fill", "#1f3b45");
+      text.textContent = label;
+      svg.appendChild(text);
+    };
 
     if (nodo.tipo === "formulario") {
       const r = create("rect");
@@ -349,6 +372,7 @@ const MiniMap = {
       r.setAttribute("stroke", strokeBase);
       r.setAttribute("stroke-width", strokeWidth);
       svg.appendChild(r);
+      addLabel();
       return;
     }
 
@@ -366,6 +390,7 @@ const MiniMap = {
       path.setAttribute("stroke", strokeBase);
       path.setAttribute("stroke-width", strokeWidth);
       svg.appendChild(path);
+      addLabel();
       return;
     }
 
@@ -383,6 +408,7 @@ const MiniMap = {
       path.setAttribute("stroke", strokeBase);
       path.setAttribute("stroke-width", strokeWidth);
       svg.appendChild(path);
+      addLabel();
       return;
     }
 
@@ -395,6 +421,7 @@ const MiniMap = {
       circle.setAttribute("stroke", strokeBase);
       circle.setAttribute("stroke-width", strokeWidth);
       svg.appendChild(circle);
+      addLabel();
       return;
     }
 
@@ -421,6 +448,7 @@ const MiniMap = {
       top.setAttribute("stroke", strokeBase);
       top.setAttribute("stroke-width", strokeWidth);
       svg.appendChild(top);
+      addLabel();
       return;
     }
 
@@ -434,6 +462,7 @@ const MiniMap = {
       el.setAttribute("stroke", strokeBase);
       el.setAttribute("stroke-width", strokeWidth);
       svg.appendChild(el);
+      addLabel();
       return;
     }
 
@@ -451,6 +480,7 @@ const MiniMap = {
       poly.setAttribute("stroke", strokeBase);
       poly.setAttribute("stroke-width", strokeWidth);
       svg.appendChild(poly);
+      addLabel();
       return;
     }
 
@@ -465,6 +495,7 @@ const MiniMap = {
     rect.setAttribute("stroke", strokeBase);
     rect.setAttribute("stroke-width", strokeWidth);
     svg.appendChild(rect);
+    addLabel();
   },
 
   render() {
