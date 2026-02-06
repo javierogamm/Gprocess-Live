@@ -608,17 +608,14 @@ const MiniMap = {
             }
             if (Interactions.selectedNodes.size > 1) {
               UI.showGroupProperties();
-              Renderer.highlightConnectionsForNode(Array.from(Interactions.selectedNodes));
             } else if (Interactions.selectedNodes.size === 1) {
               const unico = Array.from(Interactions.selectedNodes)[0];
               Engine.selectNode(unico);
-              Renderer.highlightConnectionsForNode([unico]);
               toggleRightPanel(true);
             } else {
               toggleRightPanel(false);
-              Renderer.highlightConnectionsForNode([]);
             }
-            this.applyCanvasSelectionHighlight(nodeEl);
+            this.applyCanvasSelectionHighlight(Array.from(Interactions.selectedNodes));
           }
         } else if (window.Interactions?.selectedNodes) {
           Interactions.selectedNodes.forEach((id) => {
@@ -631,12 +628,11 @@ const MiniMap = {
           if (Engine?.selectNode) {
             Engine.selectNode(nodo.id);
           }
-          Renderer.highlightConnectionsForNode(Array.from(Interactions.selectedNodes));
           toggleRightPanel(true);
-          this.applyCanvasSelectionHighlight(nodeEl);
+          this.applyCanvasSelectionHighlight(Array.from(Interactions.selectedNodes));
         } else if (Engine?.selectNode) {
           Engine.selectNode(nodo.id);
-          this.applyCanvasSelectionHighlight(nodeEl);
+          this.applyCanvasSelectionHighlight([nodo.id]);
         }
       });
 
@@ -679,15 +675,30 @@ const MiniMap = {
     this.scheduleRender();
   },
 
-  applyCanvasSelectionHighlight(nodeEl) {
-    if (!nodeEl) return;
+  applyCanvasSelectionHighlight(nodeIds) {
     if (Renderer?.LineEditor?.clear) {
       Renderer.LineEditor.clear();
     }
     document
       .querySelectorAll(".connection-line.selected-conn, .conn-path.selected-conn")
       .forEach((el) => el.classList.remove("selected-conn"));
-    nodeEl.classList.add("highlighted-node");
+    document
+      .querySelectorAll(".node.highlighted-node")
+      .forEach((el) => el.classList.remove("highlighted-node"));
+    const ids = Array.isArray(nodeIds)
+      ? nodeIds
+      : nodeIds instanceof Set
+        ? Array.from(nodeIds)
+        : nodeIds
+          ? [nodeIds]
+          : [];
+    ids.forEach((id) => {
+      const nodeEl = document.getElementById(id);
+      nodeEl?.classList.add("highlighted-node");
+    });
+    if (Renderer?.highlightConnectionsForNode) {
+      Renderer.highlightConnectionsForNode(ids);
+    }
   }
 };
 

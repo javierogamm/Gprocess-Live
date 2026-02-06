@@ -1,5 +1,8 @@
 # Historial de cambios
 
+## v1.1.39
+- Sincronizada la selección del minimapa con el canvas para aplicar resaltados completos del nodo y sus conexiones, incluyendo selección múltiple con Ctrl.
+
 ## v1.1.38
 - Sincronizado el resaltado visual del canvas al seleccionar nodos desde el minimapa (nodo activo y conexiones) para que se comporte como el clic directo en el canvas.
 
