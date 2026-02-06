@@ -1,5 +1,9 @@
 # Historial de cambios
 
+## v1.1.33
+- Ajustada la forma del documento en el minimapa y habilitado el arrastre del viewport para desplazar el canvas.
+- Sincronizados los overlays de asignaciones/cambios y los resaltados de conexiones/nodos relacionados en el minimapa.
+
 ## v1.1.32
 - Ajustado el minimapa para dibujar conexiones con el mismo trazado ortogonal del canvas y permitir navegación al seleccionar nodos.
 - Añadidas formas miniaturizadas por tipo de nodo y soporte de selección múltiple en el minimapa.

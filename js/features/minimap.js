@@ -22,6 +22,8 @@ const MiniMap = {
   dragging: false,
   dragOffset: { x: 0, y: 0 },
   resizeObserver: null,
+  viewportDragging: false,
+  viewportOffset: { x: 0, y: 0 },
 
   init() {
     if (!document.getElementById("btnMinimap")) {
@@ -43,8 +45,8 @@ const MiniMap = {
         </div>
         <div class="minimap-body">
           <svg class="minimap-svg" width="100%" height="100%"></svg>
-          <div class="minimap-nodes"></div>
           <div class="minimap-viewport"></div>
+          <div class="minimap-nodes"></div>
         </div>
       `;
       document.body.appendChild(windowEl);
@@ -70,6 +72,7 @@ const MiniMap = {
     });
 
     this.attachDragHandlers();
+    this.attachViewportDragHandlers();
     this.attachResizeObserver();
     this.attachScrollHandler();
     this.attachSelectionSync();
@@ -107,6 +110,52 @@ const MiniMap = {
       this.updateViewport();
     });
     this.resizeObserver.observe(this.windowEl);
+  },
+
+  attachViewportDragHandlers() {
+    this.viewportEl.addEventListener("mousedown", (event) => {
+      event.preventDefault();
+      const rect = this.viewportEl.getBoundingClientRect();
+      this.viewportDragging = true;
+      this.viewportOffset = {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top
+      };
+      document.body.style.userSelect = "none";
+    });
+
+    document.addEventListener("mousemove", (event) => {
+      if (!this.viewportDragging) return;
+      this.updateViewportFromDrag(event.clientX, event.clientY);
+    });
+
+    document.addEventListener("mouseup", () => {
+      if (!this.viewportDragging) return;
+      this.viewportDragging = false;
+      document.body.style.userSelect = "auto";
+    });
+  },
+
+  updateViewportFromDrag(clientX, clientY) {
+    const canvas = document.getElementById("canvasArea");
+    if (!canvas || !this.bounds) return;
+
+    const bodyRect = this.bodyEl.getBoundingClientRect();
+    const pointerX = clientX - bodyRect.left - this.viewportOffset.x;
+    const pointerY = clientY - bodyRect.top - this.viewportOffset.y;
+
+    const maxX = bodyRect.width - canvas.clientWidth * this.scale;
+    const maxY = bodyRect.height - canvas.clientHeight * this.scale;
+
+    const clampedX = Math.max(0, Math.min(pointerX, maxX));
+    const clampedY = Math.max(0, Math.min(pointerY, maxY));
+
+    const targetScrollLeft = clampedX / this.scale + this.bounds.minX;
+    const targetScrollTop = clampedY / this.scale + this.bounds.minY;
+
+    canvas.scrollLeft = targetScrollLeft;
+    canvas.scrollTop = targetScrollTop;
+    this.updateViewport();
   },
 
   attachScrollHandler() {
@@ -294,8 +343,8 @@ const MiniMap = {
       const d = `
         M 2 2
         H ${width - 2}
-        V ${height - 10}
-        C ${width * 0.65} ${height - 18}, ${width * 0.4} ${height + 4}, 2 ${height - 8}
+        V ${height - 6}
+        Q ${width * 0.5} ${height + 6}, 2 ${height - 6}
         Z
       `;
       path.setAttribute("d", d);
@@ -448,6 +497,13 @@ const MiniMap = {
       const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
       path.setAttribute("d", scaledPath);
       path.classList.add("minimap-connection");
+      const canvasPath = document.getElementById(conn.id) || document.querySelector(`.conn-path[data-conn-id="${conn.id}"]`);
+      if (canvasPath?.classList.contains("highlighted-conn")) {
+        path.classList.add("highlighted");
+      }
+      if (canvasPath?.classList.contains("selected-conn")) {
+        path.classList.add("selected");
+      }
       if (conn.id === this.selectedConnection) {
         path.classList.add("selected");
       }
@@ -462,6 +518,19 @@ const MiniMap = {
       const x = (nodo.x - this.bounds.minX) * this.scale;
       const y = (nodo.y - this.bounds.minY) * this.scale;
       nodeDiv.className = "minimap-node";
+      const canvasNode = document.getElementById(nodo.id);
+      if (canvasNode?.classList.contains("node-highlight")) {
+        nodeDiv.classList.add("assign-highlight");
+      }
+      if (canvasNode?.classList.contains("node-highlight-cambio")) {
+        nodeDiv.classList.add("cambio-highlight");
+      }
+      if (canvasNode?.classList.contains("highlighted-node")) {
+        nodeDiv.classList.add("related-highlight");
+      }
+      if (canvasNode?.classList.contains("selected-conn")) {
+        nodeDiv.classList.add("selected-conn");
+      }
       if (this.selectedNodes.has(nodo.id)) {
         nodeDiv.classList.add("selected");
       }
@@ -478,7 +547,27 @@ const MiniMap = {
         const scrollToX = nodo.x + (nodo.width || 144) / 2 - canvas.clientWidth / 2;
         const scrollToY = nodo.y + (nodo.height || 68) / 2 - canvas.clientHeight / 2;
         canvas.scrollTo({ left: scrollToX, top: scrollToY, behavior: "smooth" });
-        if (Engine?.selectNode) {
+        if (event.ctrlKey || event.metaKey) {
+          if (window.Interactions?.selectedNodes) {
+            const nodeEl = document.getElementById(nodo.id);
+            if (Interactions.selectedNodes.has(nodo.id)) {
+              Interactions.selectedNodes.delete(nodo.id);
+              nodeEl?.classList.remove("selected-multi");
+            } else {
+              Interactions.selectedNodes.add(nodo.id);
+              nodeEl?.classList.add("selected-multi");
+            }
+            if (Interactions.selectedNodes.size > 1) {
+              UI.showGroupProperties();
+            } else if (Interactions.selectedNodes.size === 1) {
+              const unico = Array.from(Interactions.selectedNodes)[0];
+              Engine.selectNode(unico);
+              Renderer.highlightConnectionsForNode([unico]);
+            } else {
+              toggleRightPanel(false);
+            }
+          }
+        } else if (Engine?.selectNode) {
           Engine.selectNode(nodo.id);
         }
       });

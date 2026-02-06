@@ -1209,12 +1209,14 @@ input {
 }
 .minimap-body .minimap-nodes {
   pointer-events: auto;
+  z-index: 2;
 }
 .minimap-viewport {
   position: absolute;
   border: 2px solid rgba(227,72,80,0.9);
   background: rgba(227,72,80,0.08);
-  pointer-events: none;
+  pointer-events: auto;
+  z-index: 1;
   box-sizing: border-box;
 }
 .minimap-node {
@@ -1230,10 +1232,29 @@ input {
   background: #e11d48;
   box-shadow: 0 0 6px rgba(225,29,72,0.8);
 }
+.minimap-node.assign-highlight {
+  box-shadow: 0 0 6px rgba(4, 200, 144, 0.8);
+  outline: 2px solid rgba(4, 200, 144, 0.8);
+}
+.minimap-node.cambio-highlight {
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.8);
+  outline: 2px solid rgba(16, 185, 129, 0.8);
+}
+.minimap-node.related-highlight {
+  box-shadow: 0 0 6px rgba(0, 180, 216, 0.8);
+  outline: 2px solid rgba(0, 180, 216, 0.8);
+}
+.minimap-node.selected-conn {
+  outline: 2px solid rgba(0, 180, 216, 0.9);
+}
 .minimap-connection {
   stroke: #6b7280;
   stroke-width: 1;
   fill: none;
+}
+.minimap-connection.highlighted {
+  stroke: rgba(0, 180, 216, 0.9);
+  stroke-width: 2;
 }
 .minimap-connection.selected {
   stroke: #e11d48;
