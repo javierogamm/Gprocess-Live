@@ -113,16 +113,30 @@ const MiniMap = {
   },
 
   attachViewportDragHandlers() {
-    this.viewportEl.addEventListener("mousedown", (event) => {
+    const startDrag = (event, centerOnPointer = false) => {
       event.preventDefault();
       const rect = this.viewportEl.getBoundingClientRect();
       this.viewportDragging = true;
       this.viewportOffset = {
-        x: event.clientX - rect.left,
-        y: event.clientY - rect.top
+        x: centerOnPointer ? rect.width / 2 : event.clientX - rect.left,
+        y: centerOnPointer ? rect.height / 2 : event.clientY - rect.top
       };
       document.body.style.userSelect = "none";
+      this.updateViewportFromDrag(event.clientX, event.clientY);
+    };
+
+    this.viewportEl.addEventListener("mousedown", (event) => {
+      startDrag(event);
     });
+
+    this.bodyEl.addEventListener(
+      "mousedown",
+      (event) => {
+        if (event.target.closest(".minimap-node")) return;
+        startDrag(event, true);
+      },
+      true
+    );
 
     document.addEventListener("mousemove", (event) => {
       if (!this.viewportDragging) return;

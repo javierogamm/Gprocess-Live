@@ -1,5 +1,8 @@
 # Historial de cambios
 
+## v1.1.34
+- Corregido el arrastre del viewport del minimapa para mover el canvas real desde el rectángulo de vista.
+
 ## v1.1.33
 - Ajustada la forma del documento en el minimapa y habilitado el arrastre del viewport para desplazar el canvas.
 - Sincronizados los overlays de asignaciones/cambios y los resaltados de conexiones/nodos relacionados en el minimapa.
