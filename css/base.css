@@ -1159,8 +1159,9 @@ input {
 
 .minimap-window {
   position: fixed;
-  top: 210px;
   right: 80px;
+  bottom: 20px;
+  top: auto;
   width: 300px;
   height: 300px;
   background: rgba(255,255,255,0.96);
