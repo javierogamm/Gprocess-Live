@@ -230,13 +230,13 @@ const ImportProcesoCompleto = {
                 </div>
             </div>
             <div class="import-full-panel">
+                <button id="importCoincidenciasConfirm" class="btn">He revisado las coincidencias</button>
                 ${matched.length ? `
                     <strong>Listado coincidente</strong>
                     <ul class="import-full-list">
                         ${matched.map(item => `<li>${this.escape(item.nombre)} <span>(${this.escape(item.ref)})</span></li>`).join("")}
                     </ul>
                 ` : "<p>No se encontraron coincidencias entre flujo y tesauros.</p>"}
-                <button id="importCoincidenciasConfirm" class="btn">He revisado las coincidencias</button>
             </div>
             ${this.state.review.coincidencias ? `<div class="import-full-status">✅ Coincidencias revisadas.</div>` : ""}
         `;
@@ -258,6 +258,7 @@ const ImportProcesoCompleto = {
                 <p>Los tesauros coincidentes aparecen primero y marcados en verde.</p>
             </div>
             <div class="import-full-panel import-full-panel--table">
+                <button id="importResumenConfirm" class="btn">Resumen revisado</button>
                 ${ordered.length ? `
                     <table class="import-full-table">
                         <thead>
@@ -284,7 +285,6 @@ const ImportProcesoCompleto = {
                         </tbody>
                     </table>
                 ` : "<p>No hay tesauros cargados para mostrar.</p>"}
-                <button id="importResumenConfirm" class="btn">Resumen revisado</button>
             </div>
             ${this.state.review.resumen ? `<div class="import-full-status">✅ Resumen confirmado.</div>` : ""}
         `;
@@ -452,7 +452,7 @@ const ImportProcesoCompleto = {
         const opcionesPorRef = { ...this.state.tesauro.selectorValues };
         if (window.DataTesauro?.applyPasteImport) {
             DataTesauro.pasteImportState = {
-                campos: this.state.tesauro.items,
+                campos: this.state.tesauro.matched,
                 selectorsQueue: [],
                 opcionesPorRef
             };

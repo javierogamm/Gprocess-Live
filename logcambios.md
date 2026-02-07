@@ -1,5 +1,8 @@
 # Historial de cambios
 
+## v1.1.42
+- Ajustado el asistente de importación para crear solo tesauros coincidentes y reubicar los botones de confirmación sobre los listados.
+
 ## v1.1.41
 - Actualizado el asistente de importación desde Gestiona con nuevos pasos para pegar flujo, tesauros, revisar coincidencias, pedir valores de selectores coincidentes y confirmar montaje.
 
