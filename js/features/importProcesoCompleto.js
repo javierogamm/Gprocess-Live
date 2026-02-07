@@ -1,18 +1,40 @@
 /* ========================================================
    IMPORT PROCESO COMPLETO DESDE GESTIONA
-   - Tesauros (CSV RPA o copypaste)
-   - Proceso (JSON o copypaste)
-   - Ficha del procedimiento
+   - Copypaste del flujo
+   - Copypaste de tesauros
+   - Coincidencias
+   - Resumen
+   - Valores de selectores coincidentes
    - Confirmación final
 ======================================================== */
 
 const ImportProcesoCompleto = {
     step: 0,
-    steps: ["Tesauros", "Proceso", "Ficha", "Confirmación"],
+    steps: ["Flujo", "Tesauros", "Coincidencias", "Resumen", "Valores", "Confirmación"],
     state: {
-        tesauro: { mode: null, done: false, message: "" },
-        proceso: { mode: null, done: false, message: "", preview: null },
-        ficha: { procedimiento: "", actividad: "", descripcion: "" }
+        flujo: {
+            done: false,
+            message: "",
+            rawText: "",
+            preview: null,
+            campos: []
+        },
+        tesauro: {
+            done: false,
+            message: "",
+            rawText: "",
+            items: [],
+            matched: [],
+            unmatched: [],
+            matchingSelectors: [],
+            selectorRefs: {},
+            selectorValues: {}
+        },
+        review: {
+            coincidencias: false,
+            resumen: false,
+            valores: false
+        }
     },
     init() {
         this.modal = document.getElementById("importFullProcessModal");
@@ -51,12 +73,28 @@ const ImportProcesoCompleto = {
     reset() {
         this.step = 0;
         this.state = {
-            tesauro: { mode: null, done: false, message: "" },
-            proceso: { mode: null, done: false, message: "", preview: null },
-            ficha: {
-                procedimiento: Engine.fichaProyecto?.procedimiento || "",
-                actividad: Engine.fichaProyecto?.actividad || "",
-                descripcion: Engine.fichaProyecto?.descripcion || ""
+            flujo: {
+                done: false,
+                message: "",
+                rawText: "",
+                preview: null,
+                campos: []
+            },
+            tesauro: {
+                done: false,
+                message: "",
+                rawText: "",
+                items: [],
+                matched: [],
+                unmatched: [],
+                matchingSelectors: [],
+                selectorRefs: {},
+                selectorValues: {}
+            },
+            review: {
+                coincidencias: false,
+                resumen: false,
+                valores: false
             }
         };
         this.render();
@@ -70,220 +108,41 @@ const ImportProcesoCompleto = {
             })
             .join("");
 
-        if (this.step === 0) this.renderTesauros();
-        if (this.step === 1) this.renderProceso();
-        if (this.step === 2) this.renderFicha();
-        if (this.step === 3) this.renderConfirmacion();
+        if (this.step === 0) this.renderFlujo();
+        if (this.step === 1) this.renderTesauros();
+        if (this.step === 2) this.renderCoincidencias();
+        if (this.step === 3) this.renderResumen();
+        if (this.step === 4) this.renderValores();
+        if (this.step === 5) this.renderConfirmacion();
 
         if (this.btnBack) {
             this.btnBack.disabled = this.step === 0;
         }
         if (this.btnNext) {
-            this.btnNext.textContent = this.step === 3 ? "Montar en la app" : "Siguiente";
+            this.btnNext.textContent = this.step === this.steps.length - 1 ? "Montar en la app" : "Siguiente";
         }
     },
-    renderTesauros() {
-        const { mode, done, message } = this.state.tesauro;
+    renderFlujo() {
+        const { done, message, rawText } = this.state.flujo;
         this.contentEl.innerHTML = `
             <div>
-                <h3>1. Importa los tesauros</h3>
-                <p>Selecciona si quieres cargar el CSV de RPA o usar copypaste desde Gestiona.</p>
+                <h3>1. Pega el copypaste del flujo</h3>
+                <p>Pega el texto completo del flujo desde Gestiona para detectar tareas y tesauros usados.</p>
             </div>
-            <div class="import-full-choice">
-                <button class="import-full-option ${mode === "csv" ? "active" : ""}" data-mode="csv">
-                    📥 CSV de RPA
-                    <small>Sube Tesauro.csv (y opcional valores).</small>
-                </button>
-                <button class="import-full-option ${mode === "paste" ? "active" : ""}" data-mode="paste">
-                    📋 Copypaste de Gestiona
-                    <small>Pega la tabla copiada desde la app.</small>
-                </button>
-            </div>
-            ${this.renderTesauroPanel()}
-            ${done ? `<div class="import-full-status">✅ ${message}</div>` : ""}
-        `;
-
-        this.contentEl.querySelectorAll(".import-full-option").forEach((btn) => {
-            btn.addEventListener("click", () => {
-                this.state.tesauro.mode = btn.dataset.mode;
-                this.state.tesauro.done = false;
-                this.state.tesauro.message = "";
-                this.render();
-            });
-        });
-
-        const loadBtn = this.contentEl.querySelector("#importTesauroLoad");
-        if (loadBtn) {
-            loadBtn.addEventListener("click", () => this.handleTesauroCSV());
-        }
-
-        const pasteOpenBtn = this.contentEl.querySelector("#importTesauroPasteOpen");
-        if (pasteOpenBtn) {
-            pasteOpenBtn.addEventListener("click", () => {
-                if (window.DataTesauro?.openPasteImportModal) {
-                    DataTesauro.openPasteImportModal();
-                } else {
-                    alert("❌ No se encontró el módulo de tesauros.");
-                }
-            });
-        }
-
-        const pasteConfirmBtn = this.contentEl.querySelector("#importTesauroPasteConfirm");
-        if (pasteConfirmBtn) {
-            pasteConfirmBtn.addEventListener("click", () => {
-                this.state.tesauro.done = true;
-                const total = window.DataTesauro?.campos?.length || 0;
-                this.state.tesauro.message = `Tesauros listos (${total} campos en catálogo).`;
-                this.render();
-            });
-        }
-    },
-    renderTesauroPanel() {
-        const { mode } = this.state.tesauro;
-        if (!mode) return "";
-        if (mode === "csv") {
-            return `
-                <div class="import-full-panel">
-                    <label>Selecciona uno o dos CSV (Tesauro.csv y opcional Valores.csv)</label>
-                    <input type="file" id="importTesauroFiles" accept=".csv" multiple />
-                    <button id="importTesauroLoad" class="btn">Cargar tesauros</button>
-                </div>
-            `;
-        }
-        return `
-            <div class="import-full-panel">
-                <p>Se abrirá el modal de copypaste. Cuando termines, marca como completado.</p>
-                <button id="importTesauroPasteOpen" class="btn">Abrir copypaste</button>
-                <button id="importTesauroPasteConfirm" class="btn btn-secundario">Ya he importado</button>
-            </div>
-        `;
-    },
-    async handleTesauroCSV() {
-        const input = this.contentEl.querySelector("#importTesauroFiles");
-        if (!input || !input.files?.length) {
-            alert("Selecciona al menos un CSV.");
-            return;
-        }
-        if (!window.DataTesauro?.importTesauroFromCSV) {
-            alert("❌ No se encontró el módulo de tesauros.");
-            return;
-        }
-
-        const files = [...input.files];
-        const contents = await Promise.all(files.map((file) => file.text()));
-        let mainCSV = null;
-        let valCSV = null;
-
-        contents.forEach((text, index) => {
-            const firstLine = text.trimStart().split("\n")[0].toLowerCase();
-            if (firstLine.includes("nombre entidad") && firstLine.includes("referencia") && firstLine.includes("castellano")) {
-                mainCSV = text;
-            }
-            if (firstLine.startsWith("referencia tesauro;") ||
-                firstLine.startsWith("referencia;i18n") ||
-                firstLine.includes("idioma;valor")) {
-                valCSV = text;
-            }
-        });
-
-        if (!mainCSV) {
-            alert("❌ Debes seleccionar el archivo Tesauro.csv principal.");
-            return;
-        }
-
-        try {
-            DataTesauro.importTesauroFromCSV(mainCSV, valCSV);
-            const total = window.DataTesauro?.campos?.length || 0;
-            this.state.tesauro.done = true;
-            this.state.tesauro.message = `Tesauros importados (${total} campos en catálogo).`;
-            this.render();
-        } catch (err) {
-            alert(`❌ Error al importar tesauros: ${err.message}`);
-        }
-    },
-    renderProceso() {
-        const { mode, done, message } = this.state.proceso;
-        this.contentEl.innerHTML = `
-            <div>
-                <h3>2. Importa el proceso</h3>
-                <p>Elige entre cargar un JSON o pegar el texto desde Gestiona.</p>
-            </div>
-            <div class="import-full-choice">
-                <button class="import-full-option ${mode === "json" ? "active" : ""}" data-mode="json">
-                    📂 JSON del proceso
-                    <small>Selecciona un archivo .json exportado.</small>
-                </button>
-                <button class="import-full-option ${mode === "paste" ? "active" : ""}" data-mode="paste">
-                    📋 Copypaste de Gestiona
-                    <small>Pega la definición del flujo.</small>
-                </button>
-            </div>
-            ${this.renderProcesoPanel()}
-            ${done ? `<div class="import-full-status">✅ ${message}</div>` : ""}
-        `;
-
-        this.contentEl.querySelectorAll(".import-full-option").forEach((btn) => {
-            btn.addEventListener("click", () => {
-                this.state.proceso.mode = btn.dataset.mode;
-                this.state.proceso.done = false;
-                this.state.proceso.message = "";
-                this.render();
-            });
-        });
-
-        const jsonBtn = this.contentEl.querySelector("#importProcesoJsonLoad");
-        if (jsonBtn) {
-            jsonBtn.addEventListener("click", () => this.handleProcesoJSON());
-        }
-
-        const pasteBtn = this.contentEl.querySelector("#importProcesoPasteLoad");
-        if (pasteBtn) {
-            pasteBtn.addEventListener("click", () => this.handleProcesoPaste());
-        }
-    },
-    renderProcesoPanel() {
-        const { mode } = this.state.proceso;
-        if (!mode) return "";
-        if (mode === "json") {
-            return `
-                <div class="import-full-panel">
-                    <label>Selecciona el archivo JSON del proceso</label>
-                    <input type="file" id="importProcesoJsonFile" accept=".json" />
-                    <button id="importProcesoJsonLoad" class="btn">Cargar JSON</button>
-                </div>
-            `;
-        }
-        return `
             <div class="import-full-panel">
                 <label>Pega aquí la definición del flujo</label>
-                <textarea id="importProcesoPasteInput" placeholder="Pega la definición de tareas desde Gestiona"></textarea>
-                <button id="importProcesoPasteLoad" class="btn">Cargar copypaste</button>
+                <textarea id="importFlujoPasteInput" placeholder="Pega la definición de tareas desde Gestiona">${this.escape(rawText)}</textarea>
+                <button id="importFlujoPasteLoad" class="btn">Cargar copypaste</button>
             </div>
+            ${done ? `<div class="import-full-status">✅ ${message}</div>` : ""}
         `;
-    },
-    async handleProcesoJSON() {
-        const input = this.contentEl.querySelector("#importProcesoJsonFile");
-        if (!input || !input.files?.length) {
-            alert("Selecciona un archivo JSON.");
-            return;
-        }
-
-        try {
-            const text = await input.files[0].text();
-            const parsed = JSON.parse(text);
-            const nodos = parsed?.nodos?.length || 0;
-            const conexiones = parsed?.conexiones?.length || 0;
-            Engine.importFromJSON(text);
-            this.state.proceso.done = true;
-            this.state.proceso.message = `JSON cargado (${nodos} nodos, ${conexiones} conexiones).`;
-            this.state.proceso.preview = { nodos, conexiones };
-            this.render();
-        } catch (err) {
-            alert("❌ No se pudo leer el JSON.");
+        const pasteBtn = this.contentEl.querySelector("#importFlujoPasteLoad");
+        if (pasteBtn) {
+            pasteBtn.addEventListener("click", () => this.handleFlujoPaste());
         }
     },
-    handleProcesoPaste() {
-        const textarea = this.contentEl.querySelector("#importProcesoPasteInput");
+    handleFlujoPaste() {
+        const textarea = this.contentEl.querySelector("#importFlujoPasteInput");
         const text = textarea?.value?.trim();
         if (!text) {
             alert("Pega antes el texto del flujo.");
@@ -294,85 +153,278 @@ const ImportProcesoCompleto = {
             alert("No se detectaron tareas válidas en el texto.");
             return;
         }
-        ImportText.import(text);
-        this.state.proceso.done = true;
-        this.state.proceso.message = `Copypaste cargado (${preview.nodos.length} nodos, ${preview.conexiones.length} conexiones).`;
-        this.state.proceso.preview = preview;
+        const campos = this.extractCamposFromFlow(text);
+        this.state.flujo.done = true;
+        this.state.flujo.rawText = text;
+        this.state.flujo.message = `Copypaste cargado (${preview.nodos.length} nodos, ${preview.conexiones.length} conexiones, ${campos.length} tesauros referenciados).`;
+        this.state.flujo.preview = preview;
+        this.state.flujo.campos = campos;
+        if (this.state.tesauro.done) {
+            this.updateTesauroMatches();
+        }
         this.render();
     },
-    renderFicha() {
-        const ficha = this.state.ficha;
+    renderTesauros() {
+        const { done, message, rawText } = this.state.tesauro;
         this.contentEl.innerHTML = `
             <div>
-                <h3>3. Completa la ficha del procedimiento</h3>
-                <p>Estos datos se guardarán junto al flujo importado.</p>
+                <h3>2. Pega el copypaste de tesauros</h3>
+                <p>Pega la tabla de tesauros desde Gestiona. Se analizarán para detectar coincidencias con el flujo.</p>
             </div>
             <div class="import-full-panel">
-                <label>Procedimiento</label>
-                <input id="importFichaProcedimiento" type="text" value="${this.escape(ficha.procedimiento)}" />
-                <label>Actividad</label>
-                <input id="importFichaActividad" type="text" value="${this.escape(ficha.actividad)}" />
-                <label>Descripción del procedimiento</label>
-                <textarea id="importFichaDescripcion">${this.escape(ficha.descripcion)}</textarea>
-                <button id="importFichaGuardar" class="btn">Guardar ficha</button>
+                <label>Pega aquí la tabla de tesauros</label>
+                <textarea id="importTesauroPasteInput" placeholder="Pega la tabla de tesauros desde Gestiona">${this.escape(rawText)}</textarea>
+                <button id="importTesauroPasteLoad" class="btn">Cargar tesauros</button>
             </div>
+            ${done ? `<div class="import-full-status">✅ ${message}</div>` : ""}
         `;
 
-        const saveBtn = this.contentEl.querySelector("#importFichaGuardar");
-        if (saveBtn) {
-            saveBtn.addEventListener("click", () => {
-                this.state.ficha.procedimiento = this.contentEl.querySelector("#importFichaProcedimiento").value.trim();
-                this.state.ficha.actividad = this.contentEl.querySelector("#importFichaActividad").value.trim();
-                this.state.ficha.descripcion = this.contentEl.querySelector("#importFichaDescripcion").value.trim();
+        const loadBtn = this.contentEl.querySelector("#importTesauroPasteLoad");
+        if (loadBtn) {
+            loadBtn.addEventListener("click", () => this.handleTesauroPaste());
+        }
+    },
+    handleTesauroPaste() {
+        const textarea = this.contentEl.querySelector("#importTesauroPasteInput");
+        const text = textarea?.value?.trim();
+        if (!text) {
+            alert("Pega antes el copypaste de tesauros.");
+            return;
+        }
+        if (!this.state.flujo.done) {
+            alert("Primero carga el copypaste del flujo.");
+            return;
+        }
+        const parsed = window.DataTesauro?.parsePasteTesauros?.(text) || [];
+        if (!parsed.length) {
+            alert("❌ No se detectaron tesauros válidos. Revisa el copypaste.");
+            return;
+        }
+        this.state.tesauro.rawText = text;
+        this.state.tesauro.items = parsed;
+        this.state.tesauro.selectorRefs = {};
+        this.state.tesauro.selectorValues = {};
+        this.updateTesauroMatches();
+        this.state.tesauro.done = true;
+        this.state.tesauro.message = `Tesauros cargados (${parsed.length} campos detectados).`;
+        this.state.review.coincidencias = false;
+        this.state.review.resumen = false;
+        this.state.review.valores = false;
+        this.render();
+    },
+    renderCoincidencias() {
+        const { matched, unmatched } = this.state.tesauro;
+        this.contentEl.innerHTML = `
+            <div>
+                <h3>3. Revisa tesauros coincidentes</h3>
+                <p>Hemos cruzado el flujo con los tesauros importados. Revisa los coincidentes antes de continuar.</p>
+            </div>
+            <div class="import-full-summary">
+                <div class="import-full-summary-item">
+                    <strong>Coincidentes detectados</strong>
+                    <p>${matched.length} tesauros coinciden con el flujo.</p>
+                </div>
+                <div class="import-full-summary-item">
+                    <strong>No coincidentes</strong>
+                    <p>${unmatched.length} tesauros no aparecen en el flujo.</p>
+                </div>
+            </div>
+            <div class="import-full-panel">
+                <button id="importCoincidenciasConfirm" class="btn">He revisado las coincidencias</button>
+                ${matched.length ? `
+                    <strong>Listado coincidente</strong>
+                    <ul class="import-full-list">
+                        ${matched.map(item => `<li>${this.escape(item.nombre)} <span>(${this.escape(item.ref)})</span></li>`).join("")}
+                    </ul>
+                ` : "<p>No se encontraron coincidencias entre flujo y tesauros.</p>"}
+            </div>
+            ${this.state.review.coincidencias ? `<div class="import-full-status">✅ Coincidencias revisadas.</div>` : ""}
+        `;
 
-                Engine.updateFichaProyecto({
-                    procedimiento: this.state.ficha.procedimiento,
-                    actividad: this.state.ficha.actividad,
-                    descripcion: this.state.ficha.descripcion
-                });
-
+        const confirmBtn = this.contentEl.querySelector("#importCoincidenciasConfirm");
+        if (confirmBtn) {
+            confirmBtn.addEventListener("click", () => {
+                this.state.review.coincidencias = true;
                 this.render();
             });
         }
     },
-    renderConfirmacion() {
-        const { tesauro, proceso, ficha } = this.state;
+    renderResumen() {
+        const { items, matched } = this.state.tesauro;
+        const ordered = this.getOrderedTesauros(items, matched);
         this.contentEl.innerHTML = `
             <div>
-                <h3>4. Validación final</h3>
-                <p>Revisa todo lo cargado antes de montar el proceso completo en la app.</p>
+                <h3>4. Resumen de tesauros coincidentes</h3>
+                <p>Los tesauros coincidentes aparecen primero y marcados en verde.</p>
+            </div>
+            <div class="import-full-panel import-full-panel--table">
+                <button id="importResumenConfirm" class="btn">Resumen revisado</button>
+                ${ordered.length ? `
+                    <table class="import-full-table">
+                        <thead>
+                            <tr>
+                                <th>Estado</th>
+                                <th>Referencia</th>
+                                <th>Nombre</th>
+                                <th>Tipo</th>
+                                <th>Momento</th>
+                                <th>Agrupación</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${ordered.map(item => `
+                                <tr class="${item._match ? "is-match" : ""}">
+                                    <td>${item._match ? "Coincidente" : "No coincide"}</td>
+                                    <td>${this.escape(item.ref)}</td>
+                                    <td>${this.escape(item.nombre)}</td>
+                                    <td>${this.escape(item.tipo)}</td>
+                                    <td>${this.escape(item.momento || "-")}</td>
+                                    <td>${this.escape(item.agrupacion || "-")}</td>
+                                </tr>
+                            `).join("")}
+                        </tbody>
+                    </table>
+                ` : "<p>No hay tesauros cargados para mostrar.</p>"}
+            </div>
+            ${this.state.review.resumen ? `<div class="import-full-status">✅ Resumen confirmado.</div>` : ""}
+        `;
+
+        const confirmBtn = this.contentEl.querySelector("#importResumenConfirm");
+        if (confirmBtn) {
+            confirmBtn.addEventListener("click", () => {
+                this.state.review.resumen = true;
+                this.render();
+            });
+        }
+    },
+    renderValores() {
+        const { matchingSelectors, selectorRefs, selectorValues } = this.state.tesauro;
+        if (!matchingSelectors.length) {
+            this.state.review.valores = true;
+        }
+        this.contentEl.innerHTML = `
+            <div>
+                <h3>5. Copypaste de valores para selectores coincidentes</h3>
+                <p>Solo se solicitarán valores para los selectores que coinciden con el flujo.</p>
+            </div>
+            ${matchingSelectors.length ? matchingSelectors.map(selector => {
+                const ref = selector.ref;
+                const refs = selectorRefs[ref];
+                const values = selectorValues[ref];
+                return `
+                    <div class="import-full-panel import-full-selector" data-ref="${this.escapeAttr(ref)}">
+                        <strong>${this.escape(selector.nombre)} (${this.escape(ref)})</strong>
+                        <label>Pega la tabla de referencias y valores</label>
+                        <textarea class="import-selector-textarea" placeholder="Pega la tabla de referencias"></textarea>
+                        <button class="btn import-selector-load">Cargar referencias</button>
+                        <div class="import-selector-values">
+                            ${this.renderSelectorValuesTable(refs, values)}
+                        </div>
+                        <button class="btn import-selector-save">Guardar valores</button>
+                        ${values ? `<div class="import-full-status">✅ Valores guardados (${values.length}).</div>` : ""}
+                    </div>
+                `;
+            }).join("") : `
+                <div class="import-full-panel">
+                    <p>No hay selectores coincidentes en el flujo.</p>
+                </div>
+            `}
+            ${this.state.review.valores ? `<div class="import-full-status">✅ Valores listos.</div>` : ""}
+        `;
+
+        this.contentEl.querySelectorAll(".import-selector-load").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const panel = btn.closest(".import-full-selector");
+                const ref = panel?.dataset?.ref;
+                const textarea = panel?.querySelector(".import-selector-textarea");
+                if (!ref || !textarea) return;
+                const text = textarea.value || "";
+                const refs = window.DataTesauro?.parseSelectorRefs?.(text) || [];
+                if (!refs.length) {
+                    alert("❌ No se detectaron referencias válidas.");
+                    return;
+                }
+                this.state.tesauro.selectorRefs[ref] = refs;
+                this.state.tesauro.selectorValues[ref] = null;
+                this.state.review.valores = false;
+                this.render();
+            });
+        });
+
+        this.contentEl.querySelectorAll(".import-selector-save").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const panel = btn.closest(".import-full-selector");
+                const ref = panel?.dataset?.ref;
+                if (!ref) return;
+                const inputs = Array.from(panel.querySelectorAll(".selector-valor-input"));
+                if (!inputs.length) {
+                    alert("❌ Debes cargar referencias antes de guardar.");
+                    return;
+                }
+                const opciones = [];
+                let missing = false;
+                inputs.forEach(input => {
+                    const valor = (input.value || "").trim();
+                    if (!valor) missing = true;
+                    opciones.push({
+                        id: window.DataTesauro?.generateId?.() || Math.random().toString(36).substring(2, 9),
+                        ref: input.dataset.ref || "",
+                        valor
+                    });
+                });
+                if (missing) {
+                    alert("❌ Completa todos los valores antes de guardar.");
+                    return;
+                }
+                this.state.tesauro.selectorValues[ref] = opciones;
+                this.state.review.valores = this.hasAllSelectorValues();
+                this.render();
+            });
+        });
+    },
+    renderConfirmacion() {
+        const { flujo, tesauro } = this.state;
+        this.contentEl.innerHTML = `
+            <div>
+                <h3>6. Confirmación final</h3>
+                <p>Confirma para montar el flujo junto a sus tesauros.</p>
             </div>
             <div class="import-full-summary">
                 <div class="import-full-summary-item">
+                    <strong>Flujo</strong>
+                    <p>${flujo.done ? flujo.message : "Pendiente de cargar."}</p>
+                </div>
+                <div class="import-full-summary-item">
                     <strong>Tesauros</strong>
-                    <p>${tesauro.done ? tesauro.message : "Pendiente de importar."}</p>
+                    <p>${tesauro.done ? tesauro.message : "Pendiente de cargar."}</p>
+                    <p>${tesauro.matched.length} coincidentes detectados.</p>
                 </div>
                 <div class="import-full-summary-item">
-                    <strong>Proceso</strong>
-                    <p>${proceso.done ? proceso.message : "Pendiente de importar."}</p>
-                </div>
-                <div class="import-full-summary-item">
-                    <strong>Ficha del procedimiento</strong>
-                    <ul>
-                        <li><strong>Procedimiento:</strong> ${this.escape(ficha.procedimiento) || "Sin definir"}</li>
-                        <li><strong>Actividad:</strong> ${this.escape(ficha.actividad) || "Sin definir"}</li>
-                        <li><strong>Descripción:</strong> ${this.escape(ficha.descripcion) || "Sin definir"}</li>
-                    </ul>
+                    <strong>Selectores coincidentes</strong>
+                    <p>${tesauro.matchingSelectors.length} selectores requieren valores.</p>
                 </div>
             </div>
         `;
     },
     next() {
-        if (this.step === 0 && !this.state.tesauro.done) {
-            alert("Completa la importación de tesauros antes de continuar.");
+        if (this.step === 0 && !this.state.flujo.done) {
+            alert("Completa el copypaste del flujo antes de continuar.");
             return;
         }
-        if (this.step === 1 && !this.state.proceso.done) {
-            alert("Completa la importación del proceso antes de continuar.");
+        if (this.step === 1 && !this.state.tesauro.done) {
+            alert("Completa el copypaste de tesauros antes de continuar.");
             return;
         }
-        if (this.step === 2 && !this.state.ficha.procedimiento) {
-            alert("Indica al menos el nombre del procedimiento.");
+        if (this.step === 2 && !this.state.review.coincidencias) {
+            alert("Revisa las coincidencias antes de continuar.");
+            return;
+        }
+        if (this.step === 3 && !this.state.review.resumen) {
+            alert("Confirma el resumen antes de continuar.");
+            return;
+        }
+        if (this.step === 4 && !this.state.review.valores) {
+            alert("Completa los valores de los selectores coincidentes.");
             return;
         }
         if (this.step < this.steps.length - 1) {
@@ -389,15 +441,117 @@ const ImportProcesoCompleto = {
         }
     },
     finish() {
-        if (!this.state.tesauro.done || !this.state.proceso.done) {
+        if (!this.state.flujo.done || !this.state.tesauro.done) {
             alert("Faltan datos por importar.");
             return;
+        }
+        if (!this.state.review.valores) {
+            alert("Completa los valores de los selectores coincidentes.");
+            return;
+        }
+        const opcionesPorRef = { ...this.state.tesauro.selectorValues };
+        if (window.DataTesauro?.applyPasteImport) {
+            DataTesauro.pasteImportState = {
+                campos: this.state.tesauro.matched,
+                selectorsQueue: [],
+                opcionesPorRef
+            };
+            DataTesauro.applyPasteImport();
+        }
+        if (window.ImportText?.import) {
+            ImportText.import(this.state.flujo.rawText);
         }
         this.close();
         alert("✅ Proceso completo importado y montado en la app.");
     },
+    extractCamposFromFlow(text) {
+        const campos = [];
+        const regex = /Sólo si\s+[“"']([^"”']+)[”"']\s+es igual a/gi;
+        let match = regex.exec(text);
+        while (match) {
+            const value = (match[1] || "").trim();
+            if (value && !campos.includes(value)) campos.push(value);
+            match = regex.exec(text);
+        }
+        return campos;
+    },
+    updateTesauroMatches() {
+        const campos = this.state.flujo.campos || [];
+        const campoKeys = new Set(campos.map(value => this.normalizeKey(value)));
+        const matched = [];
+        const unmatched = [];
+        this.state.tesauro.items.forEach(item => {
+            const refKey = this.normalizeKey(item.ref);
+            const nameKey = this.normalizeKey(item.nombre);
+            const isMatch = campoKeys.has(refKey) || campoKeys.has(nameKey);
+            if (isMatch) matched.push(item);
+            else unmatched.push(item);
+        });
+        this.state.tesauro.matched = matched;
+        this.state.tesauro.unmatched = unmatched;
+        this.state.tesauro.matchingSelectors = matched.filter(item => item.tipo === "selector");
+        this.state.review.valores = this.hasAllSelectorValues();
+    },
+    getOrderedTesauros(items, matched) {
+        const matchKeys = new Set(
+            matched.flatMap(item => [this.normalizeKey(item.ref), this.normalizeKey(item.nombre)])
+        );
+        return items
+            .map(item => ({
+                ...item,
+                _match: matchKeys.has(this.normalizeKey(item.ref)) || matchKeys.has(this.normalizeKey(item.nombre))
+            }))
+            .sort((a, b) => {
+                if (a._match && !b._match) return -1;
+                if (!a._match && b._match) return 1;
+                return (a.nombre || "").localeCompare(b.nombre || "");
+            });
+    },
+    hasAllSelectorValues() {
+        const selectors = this.state.tesauro.matchingSelectors || [];
+        if (!selectors.length) return true;
+        return selectors.every(selector => Array.isArray(this.state.tesauro.selectorValues[selector.ref]));
+    },
+    renderSelectorValuesTable(refs, values) {
+        const rows = values || refs;
+        if (!rows || !rows.length) {
+            return "<p class=\"import-full-muted\">Sin referencias cargadas.</p>";
+        }
+        return `
+            <table class="import-full-table import-full-table--compact">
+                <thead>
+                    <tr>
+                        <th>Referencia</th>
+                        <th>Valor literal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows.map(({ ref, valor }) => `
+                        <tr>
+                            <td>${this.escape(ref)}</td>
+                            <td>
+                                <input data-ref="${this.escapeAttr(ref)}" class="selector-valor-input"
+                                  value="${this.escapeAttr(valor || "")}" />
+                            </td>
+                        </tr>
+                    `).join("")}
+                </tbody>
+            </table>
+        `;
+    },
+    normalizeKey(value) {
+        return (value || "")
+            .toString()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase()
+            .trim();
+    },
     escape(value) {
         return (value || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    },
+    escapeAttr(value) {
+        return (value || "").replace(/"/g, "&quot;");
     }
 };
 
