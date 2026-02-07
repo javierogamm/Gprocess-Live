@@ -1,5 +1,8 @@
 # Historial de cambios
 
+## v1.1.43
+- Reducida la escala global de la interfaz al 70% para mostrar paneles, canvas, texto, botones y nodos más compactos.
+
 ## v1.1.42
 - Ajustado el asistente de importación para crear solo tesauros coincidentes y reubicar los botones de confirmación sobre los listados.
 

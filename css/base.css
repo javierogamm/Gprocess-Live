@@ -3,6 +3,10 @@
 ============================================ */
 
 
+:root {
+    --app-scale: 0.7;
+}
+
 .node {
     width: var(--w, auto);
     height: var(--h, auto);
@@ -11,9 +15,11 @@
 body {
     margin: 0;
     display: flex;
-    height: 100vh;
+    width: calc(100vw / var(--app-scale));
+    height: calc(100vh / var(--app-scale));
     font-family: Arial, sans-serif;
     overflow: hidden;
+    zoom: var(--app-scale);
 }
 
 /* PANEL IZQUIERDO */
