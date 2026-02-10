@@ -746,6 +746,8 @@ const flowDbSubfuncionInput = document.getElementById("flowDbSubfuncionInput");
 const flowDbNameInput = document.getElementById("flowDbNameInput");
 const flowDbNameField = document.getElementById("flowDbNameField");
 const flowDbPrimaryAction = document.getElementById("flowDbPrimaryAction");
+const flowDbOverwriteAction = document.getElementById("flowDbOverwriteAction");
+const flowDbDeleteAction = document.getElementById("flowDbDeleteAction");
 const flowDbNewSubfuncion = document.getElementById("flowDbNewSubfuncion");
 
 let flowDbItems = [];
@@ -759,6 +761,36 @@ const normalizeSubfuncion = (value) => {
         return value.trim();
     }
     return "Sin subfunción";
+};
+
+const normalizeUserName = (value) => {
+    if (typeof value !== "string") return "";
+    return value.trim();
+};
+
+const getSelectedFlowItem = () =>
+    flowDbItems.find((item) => String(item.id) === String(flowDbSelectedId)) || null;
+
+const canCurrentUserManageFlow = (item) => {
+    if (!item) return false;
+    const creatorName = normalizeUserName(item.creador);
+    const currentName = normalizeUserName(currentUser?.name);
+    return Boolean(creatorName) && creatorName === currentName;
+};
+
+const refreshFlowDbActionButtons = () => {
+    const selected = getSelectedFlowItem();
+    const canManage = flowDbMode === "save" && canCurrentUserManageFlow(selected);
+
+    if (flowDbOverwriteAction) {
+        flowDbOverwriteAction.style.display = flowDbMode === "save" ? "inline-flex" : "none";
+        flowDbOverwriteAction.disabled = !canManage;
+    }
+
+    if (flowDbDeleteAction) {
+        flowDbDeleteAction.style.display = flowDbMode === "save" ? "inline-flex" : "none";
+        flowDbDeleteAction.disabled = !canManage;
+    }
 };
 
 const closeFlowDbModal = () => {
@@ -789,6 +821,7 @@ const setFlowDbMode = (mode) => {
     if (flowDbNewSubfuncion) {
         flowDbNewSubfuncion.style.display = mode === "save" ? "inline-flex" : "none";
     }
+    refreshFlowDbActionButtons();
 };
 
 const setActiveSubfuncion = (name) => {
@@ -839,6 +872,7 @@ const renderFlowList = () => {
                 : "No hay flujos disponibles en esta subfunción.";
         empty.style.color = "#64748b";
         flowDbList.appendChild(empty);
+        refreshFlowDbActionButtons();
         return;
     }
 
@@ -877,9 +911,12 @@ const renderFlowList = () => {
                 flowDbNameInput.value = item.nombre || "";
             }
             renderFlowList();
+            refreshFlowDbActionButtons();
         });
         flowDbList.appendChild(button);
     });
+
+    refreshFlowDbActionButtons();
 };
 
 const buildSubfuncionesList = (items) => {
@@ -918,6 +955,7 @@ const openFlowDbModal = async (mode) => {
 
         buildSubfuncionesList(flowDbItems);
         setActiveSubfuncion(flowDbSubfunciones[0]);
+        refreshFlowDbActionButtons();
         flowDbModal.classList.remove("hidden");
     } catch (error) {
         console.error("Error cargando flujos desde BDD:", error);
@@ -1021,6 +1059,114 @@ if (flowDbPrimaryAction) {
         } catch (error) {
             console.error("Error guardando flujo en BDD:", error);
             alert("❌ No se pudo guardar el flujo. Revisa la consola.");
+        }
+    });
+}
+
+if (flowDbOverwriteAction) {
+    flowDbOverwriteAction.addEventListener("click", async () => {
+        const selected = getSelectedFlowItem();
+        if (!selected) {
+            alert("Selecciona un flujo para sobrescribir.");
+            return;
+        }
+        if (!canCurrentUserManageFlow(selected)) {
+            alert("Solo el creador del registro puede sobrescribir este flujo.");
+            return;
+        }
+
+        const nombre = flowDbNameInput ? flowDbNameInput.value.trim() : "";
+        const subfuncion = flowDbSubfuncionInput ? flowDbSubfuncionInput.value.trim() : "";
+        if (!nombre) {
+            alert("Indica un nombre para sobrescribir el flujo.");
+            return;
+        }
+
+        const confirmed = confirm(
+            `¿Seguro que quieres sobrescribir el flujo "${selected.nombre || "Sin nombre"}"?`
+        );
+        if (!confirmed) return;
+
+        try {
+            const response = await fetch(`/api/process-flows?id=${encodeURIComponent(selected.id)}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    nombre,
+                    subfuncion: subfuncion || "Sin subfunción",
+                    creador: selected.creador,
+                    actor: currentUser?.name,
+                    flow: Engine.buildExportPayload()
+                })
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data?.error || "Error al sobrescribir el flujo.");
+            }
+
+            if (data?.data) {
+                flowDbItems = flowDbItems.map((item) =>
+                    String(item.id) === String(selected.id) ? data.data : item
+                );
+                buildSubfuncionesList(flowDbItems);
+                setActiveSubfuncion(normalizeSubfuncion(subfuncion || "Sin subfunción"));
+                flowDbSelectedId = selected.id;
+                renderFlowList();
+            }
+
+            closeFlowDbModal();
+            alert("✅ Flujo sobrescrito correctamente en la base de datos.");
+        } catch (error) {
+            console.error("Error sobrescribiendo flujo en BDD:", error);
+            alert("❌ No se pudo sobrescribir el flujo. Revisa la consola.");
+        }
+    });
+}
+
+if (flowDbDeleteAction) {
+    flowDbDeleteAction.addEventListener("click", async () => {
+        const selected = getSelectedFlowItem();
+        if (!selected) {
+            alert("Selecciona un flujo para eliminar.");
+            return;
+        }
+        if (!canCurrentUserManageFlow(selected)) {
+            alert("Solo el creador del registro puede eliminar este flujo.");
+            return;
+        }
+
+        const confirmed = confirm(
+            `¿Seguro que quieres eliminar el flujo "${selected.nombre || "Sin nombre"}"? Esta acción no se puede deshacer.`
+        );
+        if (!confirmed) return;
+
+        try {
+            const response = await fetch(
+                `/api/process-flows?id=${encodeURIComponent(selected.id)}&actor=${encodeURIComponent(currentUser?.name || "")}`,
+                { method: "DELETE" }
+            );
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data?.error || "Error al eliminar el flujo.");
+            }
+
+            flowDbItems = flowDbItems.filter((item) => String(item.id) !== String(selected.id));
+            flowDbSelectedId = null;
+            buildSubfuncionesList(flowDbItems);
+            const nextSubfuncion = flowDbSubfunciones.includes(flowDbActiveSubfuncion)
+                ? flowDbActiveSubfuncion
+                : (flowDbSubfunciones[0] || "Sin subfunción");
+            setActiveSubfuncion(nextSubfuncion);
+            if (flowDbNameInput) {
+                flowDbNameInput.value = "";
+            }
+            renderFlowList();
+            alert("✅ Flujo eliminado correctamente de la base de datos.");
+        } catch (error) {
+            console.error("Error eliminando flujo en BDD:", error);
+            alert("❌ No se pudo eliminar el flujo. Revisa la consola.");
         }
     });
 }

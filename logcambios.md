@@ -1,5 +1,14 @@
 # Historial de cambios
 
+## v1.1.46
+- Ajustado el botón **Sobrescribir** del modal BDD para que, tras actualizar correctamente el registro seleccionado, cierre el modal automáticamente.
+- Mantenida la actualización sobre la misma fila (mismo ID) antes del cierre para conservar la sobrescritura en el registro original.
+
+## v1.1.45
+- Añadidas acciones de **Sobrescribir** y **Eliminar** en el modal de guardado en BDD, visibles en modo guardar y con confirmación explícita antes de ejecutar cambios destructivos.
+- Restringidas las acciones de sobrescritura y eliminación para que solo estén habilitadas cuando el usuario autenticado coincide con el creador del registro seleccionado.
+- Extendida la API `process-flows` con métodos `PUT` y `DELETE` validados por creador para actualizar o borrar registros de forma segura desde la interfaz.
+
 ## v1.1.44
 - Compatibilizado el guardado/carga de flujos JSON (local, copiado/pegado y BDD) para normalizar nodos con tipos heredados como `sub_process`, `sub process` o `nodeType`, convirtiéndolos a `subproceso`.
 - Añadida normalización de estructuras legacy `nodes/connections` a `nodos/conexiones` durante importación para evitar errores al copiar JSON o recuperar registros antiguos de base de datos.

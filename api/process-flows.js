@@ -150,6 +150,92 @@ module.exports = async (req, res) => {
     return res.status(201).json({ data });
   }
 
-  res.setHeader("Allow", ["GET", "POST"]);
+  if (req.method === "PUT") {
+    const { id } = req.query || {};
+    if (!id) {
+      return res.status(400).json({ error: "Missing id query parameter." });
+    }
+
+    let payload;
+    try {
+      payload = parseJsonBody(req);
+    } catch (error) {
+      return res.status(400).json({ error: "Invalid JSON payload." });
+    }
+
+    const actor = typeof payload?.actor === "string" ? payload.actor.trim() : "";
+
+    const { data: existing, error: existingError } = await supabase
+      .from("Process_Flows")
+      .select("id, creador")
+      .eq("id", id)
+      .single();
+
+    if (existingError) {
+      return res.status(404).json({ error: "Flow not found." });
+    }
+
+    const creator = typeof existing?.creador === "string" ? existing.creador.trim() : "";
+    if (!creator || !actor || creator !== actor) {
+      return res.status(403).json({ error: "Only the creator can overwrite this flow." });
+    }
+
+    const updateData = {
+      nombre: payload?.nombre ?? null,
+      subfuncion: payload?.subfuncion ?? null,
+      creador: payload?.creador ?? existing.creador ?? null,
+      flow: normalizeFlow(payload?.flow ?? payload),
+    };
+
+    const { data, error } = await supabase
+      .from("Process_Flows")
+      .update(updateData)
+      .eq("id", id)
+      .select("id, created_at, nombre, subfuncion, creador, flow")
+      .single();
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    return res.status(200).json({ data: { ...data, flow: normalizeFlow(data.flow) } });
+  }
+
+  if (req.method === "DELETE") {
+    const { id, actor: actorParam } = req.query || {};
+    if (!id) {
+      return res.status(400).json({ error: "Missing id query parameter." });
+    }
+
+    const actor = typeof actorParam === "string" ? actorParam.trim() : "";
+
+    const { data: existing, error: existingError } = await supabase
+      .from("Process_Flows")
+      .select("id, creador")
+      .eq("id", id)
+      .single();
+
+    if (existingError) {
+      return res.status(404).json({ error: "Flow not found." });
+    }
+
+    const creator = typeof existing?.creador === "string" ? existing.creador.trim() : "";
+    if (!creator || !actor || creator !== actor) {
+      return res.status(403).json({ error: "Only the creator can delete this flow." });
+    }
+
+    const { error } = await supabase
+      .from("Process_Flows")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    return res.status(200).json({ success: true, id });
+  }
+
+  res.setHeader("Allow", ["GET", "POST", "PUT", "DELETE"]);
   return res.status(405).json({ error: "Method Not Allowed" });
 };
