@@ -1,5 +1,11 @@
 # Historial de cambios
 
+## v1.1.44
+- Compatibilizado el guardado/carga de flujos JSON (local, copiado/pegado y BDD) para normalizar nodos con tipos heredados como `sub_process`, `sub process` o `nodeType`, convirtiéndolos a `subproceso`.
+- Añadida normalización de estructuras legacy `nodes/connections` a `nodos/conexiones` durante importación para evitar errores al copiar JSON o recuperar registros antiguos de base de datos.
+- Actualizada la API `process-flows` para sanear tipos de nodo al guardar y al leer, garantizando que los flujos persistidos sean compatibles con el nuevo tipo de nodo Subproceso.
+- Incorporada cobertura de pruebas para validar la importación de payloads incompatibles y su conversión automática.
+
 ## v1.1.43
 - Añadido el nuevo tipo de nodo **Subproceso** con alta desde panel, edición desde propiedades y selección desde el asistente.
 - Implementada la nueva forma SVG de **Subproceso** como rectángulos apilados, manteniendo todas las funcionalidades de un nodo estándar (conexiones, edición y resize).
