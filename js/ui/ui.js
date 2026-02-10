@@ -1116,6 +1116,7 @@ if (flowDbOverwriteAction) {
                 renderFlowList();
             }
 
+            closeFlowDbModal();
             alert("✅ Flujo sobrescrito correctamente en la base de datos.");
         } catch (error) {
             console.error("Error sobrescribiendo flujo en BDD:", error);

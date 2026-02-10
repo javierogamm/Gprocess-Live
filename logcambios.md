@@ -1,5 +1,9 @@
 # Historial de cambios
 
+## v1.1.46
+- Ajustado el botón **Sobrescribir** del modal BDD para que, tras actualizar correctamente el registro seleccionado, cierre el modal automáticamente.
+- Mantenida la actualización sobre la misma fila (mismo ID) antes del cierre para conservar la sobrescritura en el registro original.
+
 ## v1.1.45
 - Añadidas acciones de **Sobrescribir** y **Eliminar** en el modal de guardado en BDD, visibles en modo guardar y con confirmación explícita antes de ejecutar cambios destructivos.
 - Restringidas las acciones de sobrescritura y eliminación para que solo estén habilitadas cuando el usuario autenticado coincide con el creador del registro seleccionado.
