@@ -9,6 +9,72 @@
 
 const Engine = {
 
+normalizeNodeType(tipo) {
+    const raw = typeof tipo === "string" ? tipo.trim() : "";
+    if (!raw) return "formulario";
+
+    const compact = raw
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[\s_-]+/g, "");
+
+    const aliases = {
+        formulario: "formulario",
+        form: "formulario",
+        subproceso: "subproceso",
+        subprocess: "subproceso",
+        subprocesso: "subproceso",
+        subprocesses: "subproceso",
+        documento: "documento",
+        decision: "decision",
+        decisionr: "decisionR",
+        plazo: "plazo",
+        operacionexterna: "operacion_externa",
+        operacion_externa: "operacion_externa",
+        circuito: "circuito",
+        libre: "libre",
+        notas: "notas"
+    };
+
+    if (aliases[compact]) return aliases[compact];
+
+    if (compact.includes("sub") && compact.includes("proceso")) {
+        return "subproceso";
+    }
+
+    return raw.toLowerCase();
+},
+
+normalizeFlowPayload(rawPayload = {}) {
+    const payload = { ...(rawPayload || {}) };
+    const sourceNodes = Array.isArray(payload.nodos)
+        ? payload.nodos
+        : (Array.isArray(payload.nodes) ? payload.nodes : []);
+    const sourceConnections = Array.isArray(payload.conexiones)
+        ? payload.conexiones
+        : (Array.isArray(payload.connections) ? payload.connections : []);
+
+    payload.nodos = sourceNodes.map((node) => {
+        const safe = { ...node };
+        const originalType = safe.tipo ?? safe.nodeType ?? safe.tipoNodo;
+        const normalizedType = this.normalizeNodeType(originalType);
+
+        if (originalType && normalizedType !== originalType) {
+            console.warn(`⚠️ Tipo de nodo no compatible detectado (${originalType}). Convertido a ${normalizedType}.`);
+        }
+
+        safe.tipo = normalizedType;
+        return safe;
+    });
+
+    payload.conexiones = sourceConnections.map((conn) => ({ ...conn }));
+    delete payload.nodes;
+    delete payload.connections;
+
+    return payload;
+},
+
     /* -------------------------------------------
        ESTRUCTURA PRINCIPAL DE DATOS DEL FLUJO
     -------------------------------------------- */
@@ -121,6 +187,11 @@ asignaciones: {
    EXPORTAR TODO EL DIAGRAMA A JSON
 ============================================================ */
 buildExportPayload() {
+    const safeFlow = this.normalizeFlowPayload({
+        nodos: this.data.nodos,
+        conexiones: this.data.conexiones
+    });
+
     return {
         fichaProyecto: this.fichaProyecto,
 
@@ -135,8 +206,8 @@ buildExportPayload() {
             usuarios: Array.from(this.asignaciones.usuarios || [])
         },
 
-        nodos: this.data.nodos,
-        conexiones: this.data.conexiones
+        nodos: safeFlow.nodos,
+        conexiones: safeFlow.conexiones
     };
 },
 
@@ -178,20 +249,21 @@ importFromJSON(jsonString) {
     try {
         const parsed = JSON.parse(jsonString);
         if (!parsed) { alert("❌ JSON no válido."); return; }
+        const normalized = this.normalizeFlowPayload(parsed);
 
         // 1) Ficha
         this.fichaProyecto = {
-            procedimiento: parsed.fichaProyecto?.procedimiento || "",
-            actividad:     parsed.fichaProyecto?.actividad     || "",
-            descripcion:   parsed.fichaProyecto?.descripcion   || "",
-            entidad:       parsed.fichaProyecto?.entidad       || ""
+            procedimiento: normalized.fichaProyecto?.procedimiento || "",
+            actividad:     normalized.fichaProyecto?.actividad     || "",
+            descripcion:   normalized.fichaProyecto?.descripcion   || "",
+            entidad:       normalized.fichaProyecto?.entidad       || ""
         };
 
         const titleDiv = document.getElementById("projectTitle");
         if (titleDiv) titleDiv.innerText = this.fichaProyecto.procedimiento || "";
 
         // 2) Validación
-        if (!parsed.nodos || !parsed.conexiones) {
+        if (!normalized.nodos || !normalized.conexiones) {
             alert("❌ JSON sin nodos o conexiones."); 
             return;
         }
@@ -199,10 +271,10 @@ importFromJSON(jsonString) {
         this.saveHistory();
 
         // 3) Validar y clonar nodos / conexiones
-        const nodos = (parsed.nodos || []).map((nodo, idx) => {
+        const nodos = (normalized.nodos || []).map((nodo, idx) => {
             const safe = { ...nodo };
             safe.id = safe.id || `n${this.generateId()}_${idx}`;
-            safe.tipo = safe.tipo || "formulario";
+            safe.tipo = this.normalizeNodeType(safe.tipo || "formulario");
             safe.titulo = safe.titulo || safe.tipo.toUpperCase();
             safe.x = Number.isFinite(safe.x) ? safe.x : 100;
             safe.y = Number.isFinite(safe.y) ? safe.y : 100;
@@ -211,7 +283,7 @@ importFromJSON(jsonString) {
             return safe;
         });
 
-        const conexiones = (parsed.conexiones || [])
+        const conexiones = (normalized.conexiones || [])
             .map((conn, idx) => {
                 const safe = { ...conn };
                 safe.id = safe.id || `c${this.generateId()}_${idx}`;
@@ -263,8 +335,8 @@ importFromJSON(jsonString) {
         this.data = { nodos, conexiones };
 
         // 4) Tesauro (retrocompatible)
-        if (Array.isArray(parsed.tesauro)) {
-            this.tesauro = parsed.tesauro.map(x => ({...x}));
+        if (Array.isArray(normalized.tesauro)) {
+            this.tesauro = normalized.tesauro.map(x => ({...x}));
         } else {
             this.tesauro = [];
         }
@@ -282,11 +354,11 @@ importFromJSON(jsonString) {
         }
 
         // 5A — Si el JSON trae listas completas → cargarlas
-        if (parsed.asignaciones) {
-            (parsed.asignaciones.grupos || []).forEach(g => 
+        if (normalized.asignaciones) {
+            (normalized.asignaciones.grupos || []).forEach(g => 
                 this.asignaciones.grupos.add(g)
             );
-            (parsed.asignaciones.usuarios || []).forEach(u => 
+            (normalized.asignaciones.usuarios || []).forEach(u => 
                 this.asignaciones.usuarios.add(u)
             );
         }

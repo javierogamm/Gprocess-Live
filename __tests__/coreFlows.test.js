@@ -72,6 +72,40 @@ describe('Engine export/import JSON', () => {
     expect(Engine.asignaciones.grupos.has('G1')).toBe(true);
     expect(global.Renderer.renderNode).toHaveBeenCalled();
   });
+  test('importFromJSON normaliza tipos de nodo subproceso incompatibles', () => {
+    document.body.innerHTML = [
+      '<div id="projectTitle"></div>',
+      '<div id="canvasArea" style="width:800px; height:600px;"></div>',
+      '<div id="nodesContainer"></div>',
+      '<svg id="svgConnections"></svg>'
+    ].join('');
+
+    global.Renderer = {
+      init: jest.fn(),
+      clearAll: jest.fn(),
+      renderNode: jest.fn(),
+      drawConnection: jest.fn(),
+      redrawConnections: jest.fn(),
+      container: null,
+      svg: null
+    };
+    global.UI = { updateAsignacionesList: jest.fn(), clear: jest.fn() };
+    global.DataTesauro = { campos: [], render: jest.fn() };
+    Engine.saveHistory = jest.fn();
+    Engine.asignaciones = { grupos: new Set(), usuarios: new Set() };
+
+    const payload = {
+      fichaProyecto: { procedimiento: 'Alias', actividad: '', descripcion: '', entidad: '' },
+      nodes: [{ id: 'n100', nodeType: 'sub_process', titulo: 'Sub', x: 10, y: 20, width: 100, height: 80 }],
+      connections: [{ id: 'c100', from: 'n100', to: 'n100', fromPos: 'right', toPos: 'left' }]
+    };
+
+    Engine.importFromJSON(JSON.stringify(payload));
+
+    expect(Engine.data.nodos[0].tipo).toBe('subproceso');
+    expect(Engine.data.conexiones[0].id).toBe('c100');
+  });
+
 });
 
 describe('ImportText import from clipboard-like text', () => {

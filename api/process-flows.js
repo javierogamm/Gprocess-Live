@@ -37,6 +37,61 @@ const normalizePayload = (payload) => {
   return [payload];
 };
 
+const normalizeNodeType = (tipo) => {
+  const raw = typeof tipo === "string" ? tipo.trim() : "";
+  if (!raw) return "formulario";
+
+  const compact = raw
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\s_-]+/g, "");
+
+  const aliases = {
+    formulario: "formulario",
+    subproceso: "subproceso",
+    subprocess: "subproceso",
+    subprocesso: "subproceso",
+    documento: "documento",
+    decision: "decision",
+    decisionr: "decisionR",
+    plazo: "plazo",
+    operacionexterna: "operacion_externa",
+    circuito: "circuito",
+    libre: "libre",
+    notas: "notas",
+  };
+
+  if (aliases[compact]) return aliases[compact];
+  if (compact.includes("sub") && compact.includes("proceso")) return "subproceso";
+  return raw.toLowerCase();
+};
+
+const normalizeFlow = (flow) => {
+  if (!flow || typeof flow !== "object") {
+    return flow;
+  }
+
+  const payload = { ...flow };
+  const nodos = Array.isArray(payload.nodos)
+    ? payload.nodos
+    : (Array.isArray(payload.nodes) ? payload.nodes : []);
+
+  payload.nodos = nodos.map((node) => {
+    const safe = { ...node };
+    safe.tipo = normalizeNodeType(safe.tipo ?? safe.nodeType ?? safe.tipoNodo);
+    return safe;
+  });
+
+  if (!Array.isArray(payload.conexiones) && Array.isArray(payload.connections)) {
+    payload.conexiones = payload.connections.map((conn) => ({ ...conn }));
+  }
+
+  delete payload.nodes;
+  delete payload.connections;
+  return payload;
+};
+
 module.exports = async (req, res) => {
   if (req.method === "GET") {
     const { id } = req.query || {};
@@ -56,7 +111,11 @@ module.exports = async (req, res) => {
       return res.status(500).json({ error: error.message });
     }
 
-    return res.status(200).json({ data });
+    const normalizedData = Array.isArray(data)
+      ? data.map((item) => ({ ...item, flow: normalizeFlow(item.flow) }))
+      : { ...data, flow: normalizeFlow(data.flow) };
+
+    return res.status(200).json({ data: normalizedData });
   }
 
   if (req.method === "POST") {
@@ -72,7 +131,7 @@ module.exports = async (req, res) => {
       nombre: item.nombre ?? null,
       subfuncion: item.subfuncion ?? null,
       creador: item.creador ?? null,
-      flow: item.flow ?? item,
+      flow: normalizeFlow(item.flow ?? item),
     }));
 
     if (!items.length) {
