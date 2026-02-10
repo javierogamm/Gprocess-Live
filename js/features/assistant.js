@@ -441,6 +441,7 @@ const Assistant = {
           <label>Tipo de nodo</label>
           <select id="assistantTipo">
             <option value="formulario">Formulario</option>
+            <option value="subproceso">Subproceso</option>
             <option value="documento">Documento</option>
             <option value="libre">Libre</option>
             <option value="decision">Decisión</option>

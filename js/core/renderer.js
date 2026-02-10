@@ -278,6 +278,35 @@ document.addEventListener("mouseup", () => {
             r.setAttribute("stroke-width", strokeWidth);
             g.appendChild(r);
         }
+
+        /* ====================================================
+           SUBPROCESO → rectángulos apilados
+        ==================================================== */
+        if (nodo.tipo === "subproceso") {
+            const layerCount = 3;
+            const gap = Math.max(3, Math.min(W, H) * 0.05);
+            const inset = 4;
+            const totalOffset = gap * (layerCount - 1);
+            const baseWidth = Math.max(20, W - inset * 2 - totalOffset);
+            const baseHeight = Math.max(20, H - inset * 2 - totalOffset);
+            const rx = Math.min(baseWidth, baseHeight) * 0.1;
+
+            for (let i = layerCount - 1; i >= 0; i -= 1) {
+                const offset = gap * i;
+                const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                rect.setAttribute("x", inset + offset);
+                rect.setAttribute("y", inset + offset);
+                rect.setAttribute("width", baseWidth);
+                rect.setAttribute("height", baseHeight);
+                rect.setAttribute("rx", rx);
+                rect.setAttribute("ry", rx);
+                rect.setAttribute("fill", fillBase);
+                rect.setAttribute("stroke", i === 0 ? strokeBase : strokeAccent);
+                rect.setAttribute("stroke-width", i === 0 ? strokeWidth : Math.max(1, strokeWidth - 0.2));
+                rect.setAttribute("opacity", i === 0 ? "1" : "0.85");
+                g.appendChild(rect);
+            }
+        }
     
         /* ====================================================
            DOCUMENTO → doble curva suave
