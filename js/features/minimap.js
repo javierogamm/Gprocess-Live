@@ -341,6 +341,7 @@ const MiniMap = {
       circuito: "CR",
       documento: "DOC",
       formulario: "FOR",
+      subproceso: "SUB",
       plazo: "⌛",
       libre: "LIB",
       operacion_externa: "OP"
@@ -376,6 +377,35 @@ const MiniMap = {
       r.setAttribute("stroke", strokeBase);
       r.setAttribute("stroke-width", strokeWidth);
       svg.appendChild(r);
+      addLabel();
+      return;
+    }
+
+    if (nodo.tipo === "subproceso") {
+      const layers = 3;
+      const gap = Math.max(1.5, Math.min(width, height) * 0.07);
+      const inset = 1.5;
+      const totalOffset = gap * (layers - 1);
+      const shapeWidth = Math.max(4, width - inset * 2 - totalOffset);
+      const shapeHeight = Math.max(4, height - inset * 2 - totalOffset);
+      const rx = Math.min(shapeWidth, shapeHeight) * 0.12;
+
+      for (let i = layers - 1; i >= 0; i -= 1) {
+        const offset = gap * i;
+        const rect = create("rect");
+        rect.setAttribute("x", inset + offset);
+        rect.setAttribute("y", inset + offset);
+        rect.setAttribute("width", shapeWidth);
+        rect.setAttribute("height", shapeHeight);
+        rect.setAttribute("rx", rx);
+        rect.setAttribute("ry", rx);
+        rect.setAttribute("fill", fillBase);
+        rect.setAttribute("stroke", strokeBase);
+        rect.setAttribute("stroke-width", strokeWidth);
+        rect.setAttribute("opacity", i === 0 ? "1" : "0.82");
+        svg.appendChild(rect);
+      }
+
       addLabel();
       return;
     }

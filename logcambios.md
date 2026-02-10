@@ -1,5 +1,10 @@
 # Historial de cambios
 
+## v1.1.43
+- Añadido el nuevo tipo de nodo **Subproceso** con alta desde panel, edición desde propiedades y selección desde el asistente.
+- Implementada la nueva forma SVG de **Subproceso** como rectángulos apilados, manteniendo todas las funcionalidades de un nodo estándar (conexiones, edición y resize).
+- Extendida la representación del minimapa para dibujar el tipo **Subproceso** con su iconografía apilada y etiqueta abreviada.
+
 ## v1.1.42
 - Ajustado el asistente de importación para crear solo tesauros coincidentes y reubicar los botones de confirmación sobre los listados.
 

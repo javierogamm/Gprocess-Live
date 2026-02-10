@@ -1916,6 +1916,7 @@ if (tipoSelect) {
 function getDefaultColorByType(tipo) {
     switch (tipo) {
         case "formulario": return "#b9e6e8";
+        case "subproceso": return "#b9e6e8";
         case "documento": return "#b9e6e8";
         case "decision": return "#b9e6e8";
         case "circuito": return "#b9e6e8";
