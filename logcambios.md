@@ -1,5 +1,10 @@
 # Historial de cambios
 
+## v1.1.48
+- Mejorada la importación desde imagen/PDF para aproximar mejor posiciones y conexiones: ahora se usan cajas de texto con coordenadas (OCR/PDF text layer), agrupación espacial por bloques y reconstrucción por filas/columnas.
+- En PDF se prioriza la extracción del *text layer* (más precisa) y se mantiene OCR como respaldo cuando el PDF no trae texto utilizable.
+- Ajustada la generación de conexiones para inferir enlaces horizontales y verticales según layout detectado, evitando el encadenado lineal simple que distorsionaba el diagrama.
+
 ## v1.1.47
 - Añadido un nuevo botón en la parte inferior del panel izquierdo: **Capturar desde imagen / PDF**.
 - Incorporado un modal para cargar imágenes o PDFs, ejecutar OCR en cliente (Tesseract.js), interpretar relaciones de flujo y dibujar automáticamente nodos y conexiones en el canvas.
