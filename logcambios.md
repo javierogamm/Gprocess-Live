@@ -1,5 +1,10 @@
 # Historial de cambios
 
+## v1.1.47
+- Añadido un nuevo botón en la parte inferior del panel izquierdo: **Capturar desde imagen / PDF**.
+- Incorporado un modal para cargar imágenes o PDFs, ejecutar OCR en cliente (Tesseract.js), interpretar relaciones de flujo y dibujar automáticamente nodos y conexiones en el canvas.
+- Integradas recomendaciones tecnológicas para despliegue en Vercel sin alterar el funcionamiento previo (MVP en cliente y opción de OCR serverless para mayor precisión).
+
 ## v1.1.46
 - Ajustado el botón **Sobrescribir** del modal BDD para que, tras actualizar correctamente el registro seleccionado, cierre el modal automáticamente.
 - Mantenida la actualización sobre la misma fila (mismo ID) antes del cierre para conservar la sobrescritura en el registro original.

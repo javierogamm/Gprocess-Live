@@ -218,6 +218,53 @@ body.panel-locked #canvasArea {
     border-radius: 6px;
 }
 
+.import-image-block {
+  margin-top: 10px;
+  padding: 10px;
+  border-top: 1px solid #ccc;
+}
+
+.btn-import-image-flow {
+  width: 100%;
+  background: #0f766e;
+  color: #fff;
+}
+
+.btn-import-image-flow:hover {
+  background: #0d5f58;
+}
+
+.image-flow-modal {
+  max-width: 900px;
+}
+
+.image-flow-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.image-flow-status {
+  min-height: 44px;
+  padding: 10px;
+  background: #f8fafc;
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  white-space: pre-wrap;
+}
+
+.image-flow-tech-notes {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fff;
+}
+
+.image-flow-tech-notes summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
 .user-status {
     display: flex;
     flex-direction: column;

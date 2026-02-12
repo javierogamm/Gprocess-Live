@@ -110,6 +110,9 @@
                 Importar diagrama desde Gestiona
             </button>
         </div>
+        <div id="importFromImageBlock" class="import-image-block">
+            <button id="btnImportImageFlow" class="btn btn-import-image-flow">🖼️ Capturar desde imagen / PDF</button>
+        </div>
         <!-- Input oculto para seleccionar los dos archivos -->
         <input
             type="file"
@@ -285,6 +288,35 @@
 </div>
 
 <!-- =========================
+    MODAL IMPORTAR FLUJO DESDE IMAGEN/PDF
+========================= -->
+<div id="imageFlowModal" class="modal hidden">
+    <div class="modal-content modal-content--wide image-flow-modal">
+        <div class="csv-modal-header">
+            <h2>Capturar flujo desde imagen o PDF</h2>
+            <button id="imageFlowClose" class="csv-close-btn" aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="image-flow-body">
+            <p>
+                Sube una imagen o PDF del flujo. Se ejecutará OCR para detectar nombres de nodos y conexiones
+                (por ejemplo: <strong>Registro → Revisión → Resolución</strong>).
+            </p>
+            <input id="imageFlowInput" type="file" accept="image/*,.pdf,application/pdf">
+            <button id="imageFlowProcess" class="btn">Procesar y dibujar flujo</button>
+            <div id="imageFlowStatus" class="image-flow-status"></div>
+            <details class="image-flow-tech-notes">
+                <summary>Opciones tecnológicas recomendadas (Vercel)</summary>
+                <ul>
+                    <li><strong>Cliente (sin servidor):</strong> OCR con Tesseract.js + lectura de PDF con PDF.js para un MVP rápido.</li>
+                    <li><strong>Servidor (más precisión):</strong> OCR en función serverless (Google Vision/Azure OCR/AWS Textract) y parser de relaciones.</li>
+                    <li><strong>Escalado:</strong> mantener importadores actuales y activar este módulo como complemento opcional.</li>
+                </ul>
+            </details>
+        </div>
+    </div>
+</div>
+
+<!-- =========================
     MODAL IMPORTAR PROCESO COMPLETO DESDE GESTIONA
 ========================= -->
 <div id="importFullProcessModal" class="modal hidden">
@@ -361,6 +393,7 @@
 <script src="js/features/tesauromanager.js"></script>
 <script src="js/features/wizard.js"></script>
 <script src="js/features/importProcesoCompleto.js"></script>
+<script src="js/features/importImageFlow.js"></script>
 <script src="js/interactions/resizepanels.js"></script>
 <script src="js/features/assistant.js"></script>
 <script src="js/features/minimap.js"></script>
