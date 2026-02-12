@@ -71,6 +71,12 @@
     return true;
   }
 
+  function isConnectorTokenText(text) {
+    const t = cleanText(text).toLowerCase();
+    if (!t) return false;
+    return /^(?:->|=>|>|<|→|←|↔|↕|⟶|⟵|↓|↑|⇢|⇠|=?>|<?=)$/.test(t);
+  }
+
   function normalizeToken(token) {
     const text = cleanText(token.text || token.str || "");
     const left = Number.isFinite(token.left) ? token.left : 0;
@@ -83,6 +89,8 @@
       top,
       right: left + width,
       bottom: top + height,
+      cx: left + width / 2,
+      cy: top + height / 2,
       width,
       height,
       confidence: Number.isFinite(token.confidence) ? token.confidence : 100
@@ -96,9 +104,32 @@
     return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
   }
 
+  function splitTokens(rawWords, confidenceFloor = 35) {
+    const words = (rawWords || []).map((w) => ({
+      text: w.text,
+      left: w.left,
+      top: w.top,
+      width: w.width,
+      height: w.height,
+      confidence: w.confidence
+    }));
+
+    const nodesTokens = words
+      .filter(isUsefulToken)
+      .map(normalizeToken)
+      .filter((w) => w.confidence >= confidenceFloor || w.text.length >= 5)
+      .filter((w) => !isConnectorTokenText(w.text));
+
+    const connectorTokens = words
+      .map(normalizeToken)
+      .filter((w) => isConnectorTokenText(w.text));
+
+    return { nodesTokens, connectorTokens };
+  }
+
   async function extractImageTokens(file) {
     const result = await window.Tesseract.recognize(file, "spa+eng");
-    const words = (result?.data?.words || [])
+    const rawWords = (result?.data?.words || [])
       .map((w) => ({
         text: w.text,
         left: w.bbox?.x0,
@@ -106,13 +137,12 @@
         width: (w.bbox?.x1 || 0) - (w.bbox?.x0 || 0),
         height: (w.bbox?.y1 || 0) - (w.bbox?.y0 || 0),
         confidence: w.confidence
-      }))
-      .filter(isUsefulToken)
-      .map(normalizeToken)
-      .filter((w) => w.confidence >= 35 || w.text.length >= 5);
+      }));
+    const { nodesTokens, connectorTokens } = splitTokens(rawWords, 35);
 
     return {
-      tokens: words,
+      tokens: nodesTokens,
+      connectorTokens,
       sourceWidth: result?.data?.imageSize?.width || 1600,
       sourceHeight: result?.data?.imageSize?.height || 900,
       mode: "ocr-image"
@@ -156,9 +186,10 @@
       }
     }
 
-    const tokens = all.filter(isUsefulToken).map(normalizeToken);
+    const { nodesTokens, connectorTokens } = splitTokens(all, 0);
     return {
-      tokens,
+      tokens: nodesTokens,
+      connectorTokens,
       sourceWidth: maxW || 1600,
       sourceHeight: sumH || 1200,
       mode: "pdf-text-layer"
@@ -200,9 +231,10 @@
       sumH += canvas.height + 80;
     }
 
-    const tokens = all.filter(isUsefulToken).map(normalizeToken).filter((w) => w.confidence >= 35 || w.text.length >= 5);
+    const { nodesTokens, connectorTokens } = splitTokens(all, 35);
     return {
-      tokens,
+      tokens: nodesTokens,
+      connectorTokens,
       sourceWidth: maxW || 1600,
       sourceHeight: sumH || 1200,
       mode: "pdf-ocr"
@@ -221,8 +253,8 @@
   function clusterTokens(tokens) {
     if (!tokens.length) return [];
     const medianH = median(tokens.map((t) => t.height)) || 12;
-    const gapX = Math.max(28, medianH * 3.6);
-    const gapY = Math.max(18, medianH * 2.2);
+    const gapX = Math.max(18, medianH * 2.2);
+    const gapY = Math.max(12, medianH * 1.4);
 
     const sorted = [...tokens].sort((a, b) => (a.top - b.top) || (a.left - b.left));
     const clusters = [];
@@ -330,7 +362,18 @@
     return Array.from(byLabel.values());
   }
 
-  function inferEdges(nodes) {
+  function hasConnectorBetween(from, to, connectorTokens) {
+    if (!Array.isArray(connectorTokens) || !connectorTokens.length) return false;
+    const margin = 30;
+    const minX = Math.min(from.cx, to.cx) - margin;
+    const maxX = Math.max(from.cx, to.cx) + margin;
+    const minY = Math.min(from.cy, to.cy) - margin;
+    const maxY = Math.max(from.cy, to.cy) + margin;
+    return connectorTokens.some((c) => c.cx >= minX && c.cx <= maxX && c.cy >= minY && c.cy <= maxY);
+  }
+
+  function inferEdges(nodes, connectorTokens) {
+    if (!connectorTokens?.length) return [];
     const rows = groupRows(nodes);
     const edges = [];
     const seen = new Set();
@@ -345,7 +388,9 @@
 
     for (const row of rows) {
       for (let i = 0; i < row.nodes.length - 1; i += 1) {
-        addEdge(row.nodes[i], row.nodes[i + 1]);
+          const from = row.nodes[i];
+          const to = row.nodes[i + 1];
+          if (hasConnectorBetween(from, to, connectorTokens)) addEdge(from, to);
       }
     }
 
@@ -369,7 +414,7 @@
           }
         }
 
-        if (best) addEdge(n, best);
+        if (best && hasConnectorBetween(n, best, connectorTokens)) addEdge(n, best);
       }
     }
 
@@ -393,18 +438,55 @@
     const targetW = Math.max(400, canvasW - marginX * 2);
     const targetH = Math.max(300, canvasH - marginY * 2);
 
-    const scaleX = targetW / boxW;
-    const scaleY = targetH / boxH;
+    const scale = Math.min(targetW / boxW, targetH / boxH);
+
+    const usedW = boxW * scale;
+    const usedH = boxH * scale;
+    const offsetX = marginX + (targetW - usedW) / 2;
+    const offsetY = marginY + (targetH - usedH) / 2;
 
     return nodes.map((n) => {
-      const nx = Math.round(marginX + (n.left - minX) * scaleX);
-      const ny = Math.round(marginY + (n.top - minY) * scaleY);
+      const nx = Math.round(offsetX + (n.left - minX) * scale);
+      const ny = Math.round(offsetY + (n.top - minY) * scale);
       return {
         ...n,
         drawX: nx,
         drawY: ny
       };
     });
+  }
+
+  function resolveOverlaps(nodes) {
+    const width = 144;
+    const height = 68;
+    const pad = 18;
+    const placed = [];
+
+    for (const node of [...nodes].sort((a, b) => (a.drawY - b.drawY) || (a.drawX - b.drawX))) {
+      let x = node.drawX;
+      let y = node.drawY;
+      let moved = false;
+
+      for (let attempts = 0; attempts < 40; attempts += 1) {
+        const collides = placed.some((p) => {
+          const overlapX = x < p.drawX + width + pad && x + width + pad > p.drawX;
+          const overlapY = y < p.drawY + height + pad && y + height + pad > p.drawY;
+          return overlapX && overlapY;
+        });
+
+        if (!collides) break;
+
+        moved = true;
+        const shiftX = (attempts % 4 === 0) ? width + pad : ((attempts % 4 === 1) ? -(width + pad) : 0);
+        const shiftY = (attempts % 4 >= 2) ? height + pad : 0;
+        x += shiftX;
+        y += shiftY;
+      }
+
+      placed.push({ ...node, drawX: x, drawY: y, moved });
+    }
+
+    return placed;
   }
 
   function chooseNodeType(label) {
@@ -422,10 +504,35 @@
       throw new Error("No se detectaron nodos con texto útil. Prueba con una imagen más nítida o PDF digital.");
     }
 
-    const positioned = mapToCanvas(filtered, extraction.sourceWidth, extraction.sourceHeight)
+    const positionedRaw = mapToCanvas(filtered, extraction.sourceWidth, extraction.sourceHeight)
       .map((n, idx) => ({ ...n, id: `ocr_${idx}_${Math.random().toString(36).slice(2, 6)}` }));
+    const positioned = resolveOverlaps(positionedRaw);
 
-    const edges = inferEdges(positioned);
+    const connectorTokens = (extraction.connectorTokens || []).map((c) => {
+      const minX = Math.min(...filtered.map((n) => n.left));
+      const maxX = Math.max(...filtered.map((n) => n.right));
+      const minY = Math.min(...filtered.map((n) => n.top));
+      const maxY = Math.max(...filtered.map((n) => n.bottom));
+      const boxW = Math.max(200, maxX - minX);
+      const boxH = Math.max(120, maxY - minY);
+      const canvasW = Math.max(extraction.sourceWidth || 1800, 1400);
+      const canvasH = Math.max(extraction.sourceHeight || 1200, 900);
+      const marginX = 120;
+      const marginY = 100;
+      const targetW = Math.max(400, canvasW - marginX * 2);
+      const targetH = Math.max(300, canvasH - marginY * 2);
+      const scale = Math.min(targetW / boxW, targetH / boxH);
+      const usedW = boxW * scale;
+      const usedH = boxH * scale;
+      const offsetX = marginX + (targetW - usedW) / 2;
+      const offsetY = marginY + (targetH - usedH) / 2;
+      return {
+        cx: offsetX + (c.cx - minX) * scale,
+        cy: offsetY + (c.cy - minY) * scale
+      };
+    });
+
+    const edges = inferEdges(positioned, connectorTokens);
 
     Engine.clearAll();
 

@@ -1,5 +1,10 @@
 # Historial de cambios
 
+## v1.1.49
+- Endurecida la inferencia de conexiones en importación OCR: ahora **solo** se dibujan conexiones cuando se detectan tokens de conector (flechas/símbolos) entre nodos, evitando conexiones inventadas en nodos aislados.
+- Mejorado el mapeo de coordenadas al canvas con escala uniforme para respetar mejor proporciones y posiciones originales del PDF/imagen.
+- Añadida resolución de solapes tras el mapeo para que los nodos no se superpongan en el lienzo final.
+
 ## v1.1.48
 - Mejorada la importación desde imagen/PDF para aproximar mejor posiciones y conexiones: ahora se usan cajas de texto con coordenadas (OCR/PDF text layer), agrupación espacial por bloques y reconstrucción por filas/columnas.
 - En PDF se prioriza la extracción del *text layer* (más precisa) y se mantiene OCR como respaldo cuando el PDF no trae texto utilizable.
