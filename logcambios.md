@@ -1,5 +1,10 @@
 # Historial de cambios
 
+## v1.1.50
+- Corregida la regresión que dejaba el OCR sin conexiones: cuando no hay símbolos de flecha detectados, ahora se aplica una inferencia geométrica controlada (alineación + distancia + sin nodos intermedios) para reconstruir líneas reales sin inventar enlaces masivos.
+- Mantenida la prioridad de conectores explícitos cuando existen; si se detectan, se usan como evidencia principal para dibujar conexiones.
+- Ajustados umbrales de conexión horizontal/vertical para recuperar mejor las líneas de diagramas PDF/imagen sin volver al comportamiento de sobreconexión.
+
 ## v1.1.49
 - Endurecida la inferencia de conexiones en importación OCR: ahora **solo** se dibujan conexiones cuando se detectan tokens de conector (flechas/símbolos) entre nodos, evitando conexiones inventadas en nodos aislados.
 - Mejorado el mapeo de coordenadas al canvas con escala uniforme para respetar mejor proporciones y posiciones originales del PDF/imagen.

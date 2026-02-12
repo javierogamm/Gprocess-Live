@@ -372,11 +372,51 @@
     return connectorTokens.some((c) => c.cx >= minX && c.cx <= maxX && c.cy >= minY && c.cy <= maxY);
   }
 
+  function hasIntermediateNodeBetween(from, to, nodes, axis) {
+    const pad = 16;
+    if (axis === "h") {
+      const minX = Math.min(from.cx, to.cx) + pad;
+      const maxX = Math.max(from.cx, to.cx) - pad;
+      const minY = Math.min(from.cy, to.cy) - 26;
+      const maxY = Math.max(from.cy, to.cy) + 26;
+      return nodes.some((n) => n.id !== from.id && n.id !== to.id && n.cx >= minX && n.cx <= maxX && n.cy >= minY && n.cy <= maxY);
+    }
+
+    const minY = Math.min(from.cy, to.cy) + pad;
+    const maxY = Math.max(from.cy, to.cy) - pad;
+    const minX = Math.min(from.cx, to.cx) - 40;
+    const maxX = Math.max(from.cx, to.cx) + 40;
+    return nodes.some((n) => n.id !== from.id && n.id !== to.id && n.cy >= minY && n.cy <= maxY && n.cx >= minX && n.cx <= maxX);
+  }
+
+  function seemsConnectedByGeometry(from, to, nodes, metrics) {
+    const dx = to.cx - from.cx;
+    const dy = to.cy - from.cy;
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(dy);
+    const maxGapX = Math.max(90, metrics.medianWidth * 2.6);
+    const maxGapY = Math.max(90, metrics.medianHeight * 3.0);
+
+    const horizontal = dx > 0 && absDy <= Math.max(22, metrics.rowTolerance * 0.8) && absDx <= maxGapX;
+    if (horizontal && !hasIntermediateNodeBetween(from, to, nodes, "h")) return true;
+
+    const vertical = dy > 0 && absDx <= Math.max(42, metrics.colTolerance * 1.1) && absDy <= maxGapY;
+    if (vertical && !hasIntermediateNodeBetween(from, to, nodes, "v")) return true;
+
+    return false;
+  }
+
   function inferEdges(nodes, connectorTokens) {
-    if (!connectorTokens?.length) return [];
     const rows = groupRows(nodes);
     const edges = [];
     const seen = new Set();
+    const metrics = {
+      medianWidth: median(nodes.map((n) => n.width)) || 120,
+      medianHeight: median(nodes.map((n) => n.height)) || 60,
+      rowTolerance: Math.max(26, median(nodes.map((n) => n.height)) * 2.2),
+      colTolerance: Math.max(42, median(nodes.map((n) => n.width)) * 0.6)
+    };
+    const hasConnectorHints = Array.isArray(connectorTokens) && connectorTokens.length > 0;
 
     function addEdge(from, to) {
       if (!from || !to || from.id === to.id) return;
@@ -388,13 +428,14 @@
 
     for (const row of rows) {
       for (let i = 0; i < row.nodes.length - 1; i += 1) {
-          const from = row.nodes[i];
-          const to = row.nodes[i + 1];
-          if (hasConnectorBetween(from, to, connectorTokens)) addEdge(from, to);
+        const from = row.nodes[i];
+        const to = row.nodes[i + 1];
+        const byConnector = hasConnectorHints && hasConnectorBetween(from, to, connectorTokens);
+        const byGeometry = !hasConnectorHints && seemsConnectedByGeometry(from, to, nodes, metrics);
+        if (byConnector || byGeometry) addEdge(from, to);
       }
     }
 
-    const colTolerance = Math.max(42, median(nodes.map((n) => n.width)) * 0.6);
     for (let r = 0; r < rows.length - 1; r += 1) {
       const current = rows[r].nodes;
       const next = rows[r + 1].nodes;
@@ -406,7 +447,7 @@
           const dx = Math.abs(candidate.cx - n.cx);
           const dy = candidate.cy - n.cy;
           if (dy <= 0) continue;
-          if (dx > colTolerance) continue;
+          if (dx > metrics.colTolerance) continue;
           const dist = dy + dx * 0.7;
           if (dist < bestDist) {
             best = candidate;
@@ -414,7 +455,10 @@
           }
         }
 
-        if (best && hasConnectorBetween(n, best, connectorTokens)) addEdge(n, best);
+        if (!best) continue;
+        const byConnector = hasConnectorHints && hasConnectorBetween(n, best, connectorTokens);
+        const byGeometry = !hasConnectorHints && seemsConnectedByGeometry(n, best, nodes, metrics);
+        if (byConnector || byGeometry) addEdge(n, best);
       }
     }
 
