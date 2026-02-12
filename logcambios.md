@@ -1,5 +1,10 @@
 # Historial de cambios
 
+## v1.1.53
+- Corregida la duplicación de nodos en la importación OCR: se añade consolidación por solape geométrico (IoU), proximidad espacial y similitud de tokens de texto para unificar detecciones repetidas del mismo bloque.
+- Mejorada la selección de etiqueta final por nodo consolidado para evitar textos partidos entre varios nodos duplicados.
+- Mantenido el flujo por fases (nodos -> conexiones -> texto) con una etapa adicional de consolidación antes de construir el grafo.
+
 ## v1.1.52
 - Reforzada la identificación de conexiones con enfoque en **formas y líneas**: se añade una máscara geométrica del diagrama (raster) y validación de trazo entre nodos para confirmar conexiones reales.
 - En PDF e imagen, ahora se analiza primero la geometría visual (nodos/líneas), y se usa OCR para incorporar texto después del trazado estructural.

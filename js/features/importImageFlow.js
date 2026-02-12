@@ -486,6 +486,79 @@
     return merged;
   }
 
+  function tokenSetFromLabel(label) {
+    return new Set(
+      cleanText(label)
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((t) => t && t.length > 1)
+    );
+  }
+
+  function tokenOverlapScore(a, b) {
+    const aSet = tokenSetFromLabel(a);
+    const bSet = tokenSetFromLabel(b);
+    if (!aSet.size || !bSet.size) return 0;
+    let common = 0;
+    for (const tok of aSet) {
+      if (bSet.has(tok)) common += 1;
+    }
+    return common / Math.max(aSet.size, bSet.size);
+  }
+
+  function iou(a, b) {
+    const ix = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left));
+    const iy = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+    if (!ix || !iy) return 0;
+    const inter = ix * iy;
+    const union = a.width * a.height + b.width * b.height - inter;
+    return union > 0 ? inter / union : 0;
+  }
+
+  function consolidateDuplicateNodes(nodes) {
+    if (!nodes.length) return nodes;
+    const sorted = [...nodes].sort((a, b) => (b.width * b.height) - (a.width * a.height));
+    const groups = [];
+
+    for (const node of sorted) {
+      let matched = null;
+      for (const group of groups) {
+        const ref = group.ref;
+        const dx = Math.abs(node.cx - ref.cx);
+        const dy = Math.abs(node.cy - ref.cy);
+        const near = dx <= Math.max(22, ref.width * 0.25) && dy <= Math.max(18, ref.height * 0.35);
+        const overlap = iou(node, ref) >= 0.42;
+        const textOverlap = tokenOverlapScore(node.label, ref.label) >= 0.45;
+        if ((near || overlap) && (textOverlap || overlap)) {
+          matched = group;
+          break;
+        }
+      }
+
+      if (!matched) {
+        groups.push({ ref: node, nodes: [node] });
+      } else {
+        matched.nodes.push(node);
+        const best = matched.nodes.reduce((acc, cur) => {
+          const accScore = acc.label.length + (acc.width * acc.height) * 0.003;
+          const curScore = cur.label.length + (cur.width * cur.height) * 0.003;
+          return curScore > accScore ? cur : acc;
+        });
+        matched.ref = best;
+      }
+    }
+
+    return groups.map((g) => {
+      const chosen = g.ref;
+      const labels = g.nodes.map((n) => n.label).sort((a, b) => b.length - a.length);
+      const finalLabel = labels[0] || chosen.label;
+      return {
+        ...chosen,
+        label: finalLabel
+      };
+    });
+  }
+
   function hasConnectorBetween(from, to, connectorTokens) {
     if (!Array.isArray(connectorTokens) || !connectorTokens.length) return false;
     const margin = 30;
@@ -734,7 +807,9 @@
   function buildFlowFromTokens(extraction) {
     const clustered = clusterTokens(extraction.tokens);
     const mergedWrapped = mergeLineBreakFragments(clustered);
-    const sourceNodes = dedupeNodes(mergedWrapped)
+    const dedupedByLabel = dedupeNodes(mergedWrapped);
+    const consolidated = consolidateDuplicateNodes(dedupedByLabel);
+    const sourceNodes = consolidated
       .filter((n) => n.label.length <= 140)
       .map((n, idx) => ({ ...n, id: `ocr_${idx}_${Math.random().toString(36).slice(2, 6)}` }));
 
