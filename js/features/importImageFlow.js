@@ -127,8 +127,58 @@
     return { nodesTokens, connectorTokens };
   }
 
+  async function imageFileToCanvas(file, maxDim = 2200) {
+    const blobUrl = URL.createObjectURL(file);
+    try {
+      const img = await new Promise((resolve, reject) => {
+        const el = new Image();
+        el.onload = () => resolve(el);
+        el.onerror = () => reject(new Error("No se pudo leer la imagen."));
+        el.src = blobUrl;
+      });
+
+      const scale = Math.min(1, maxDim / Math.max(img.naturalWidth || 1, img.naturalHeight || 1));
+      const w = Math.max(1, Math.round((img.naturalWidth || 1) * scale));
+      const h = Math.max(1, Math.round((img.naturalHeight || 1) * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d", { alpha: false });
+      ctx.drawImage(img, 0, 0, w, h);
+      return canvas;
+    } finally {
+      URL.revokeObjectURL(blobUrl);
+    }
+  }
+
+  function buildShapeMaskFromCanvas(canvas) {
+    const w = canvas.width;
+    const h = canvas.height;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    const img = ctx.getImageData(0, 0, w, h).data;
+    const mask = new Uint8Array(w * h);
+
+    for (let i = 0, p = 0; p < mask.length; i += 4, p += 1) {
+      const r = img[i];
+      const g = img[i + 1];
+      const b = img[i + 2];
+      const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      const maxC = Math.max(r, g, b);
+      const minC = Math.min(r, g, b);
+      const sat = maxC === 0 ? 0 : (maxC - minC) / maxC;
+      // bordes/líneas oscuras (negro, gris, azul oscuro)
+      const dark = lum < 165;
+      const coloredBorder = sat > 0.08 && lum < 190;
+      mask[p] = (dark || coloredBorder) ? 1 : 0;
+    }
+
+    return { width: w, height: h, mask };
+  }
+
   async function extractImageTokens(file) {
     const result = await window.Tesseract.recognize(file, "spa+eng");
+    const rasterCanvas = await imageFileToCanvas(file);
+    const shapeMask = buildShapeMaskFromCanvas(rasterCanvas);
     const rawWords = (result?.data?.words || [])
       .map((w) => ({
         text: w.text,
@@ -143,6 +193,7 @@
     return {
       tokens: nodesTokens,
       connectorTokens,
+      shapeMask,
       sourceWidth: result?.data?.imageSize?.width || 1600,
       sourceHeight: result?.data?.imageSize?.height || 900,
       mode: "ocr-image"
@@ -155,10 +206,17 @@
     const all = [];
     let maxW = 0;
     let sumH = 0;
+    const pageCanvases = [];
 
     for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
       const page = await pdf.getPage(pageNumber);
       const viewport = page.getViewport({ scale: 1.5 });
+      const pageCanvas = document.createElement("canvas");
+      pageCanvas.width = Math.ceil(viewport.width);
+      pageCanvas.height = Math.ceil(viewport.height);
+      const pageCtx = pageCanvas.getContext("2d", { alpha: false });
+      await page.render({ canvasContext: pageCtx, viewport }).promise;
+      pageCanvases.push(pageCanvas);
       const content = await page.getTextContent();
 
       maxW = Math.max(maxW, viewport.width);
@@ -187,9 +245,20 @@
     }
 
     const { nodesTokens, connectorTokens } = splitTokens(all, 0);
+    const stitchedCanvas = document.createElement("canvas");
+    stitchedCanvas.width = Math.max(1, Math.ceil(maxW));
+    stitchedCanvas.height = Math.max(1, Math.ceil(sumH));
+    const stitchedCtx = stitchedCanvas.getContext("2d", { alpha: false });
+    let yOffset = 0;
+    for (const pageCanvas of pageCanvases) {
+      stitchedCtx.drawImage(pageCanvas, 0, yOffset);
+      yOffset += pageCanvas.height + 80;
+    }
+    const shapeMask = buildShapeMaskFromCanvas(stitchedCanvas);
     return {
       tokens: nodesTokens,
       connectorTokens,
+      shapeMask,
       sourceWidth: maxW || 1600,
       sourceHeight: sumH || 1200,
       mode: "pdf-text-layer"
@@ -212,11 +281,13 @@
     const all = [];
     let maxW = 0;
     let sumH = 0;
+    const pageCanvases = [];
 
     for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
       const page = await pdf.getPage(pageNumber);
       const canvas = await renderPdfPageToCanvas(page);
       maxW = Math.max(maxW, canvas.width);
+      pageCanvases.push(canvas);
 
       const result = await window.Tesseract.recognize(canvas, "spa+eng");
       const words = (result?.data?.words || []).map((w) => ({
@@ -232,9 +303,20 @@
     }
 
     const { nodesTokens, connectorTokens } = splitTokens(all, 35);
+    const stitchedCanvas = document.createElement("canvas");
+    stitchedCanvas.width = Math.max(1, Math.ceil(maxW));
+    stitchedCanvas.height = Math.max(1, Math.ceil(sumH));
+    const stitchedCtx = stitchedCanvas.getContext("2d", { alpha: false });
+    let yOffset = 0;
+    for (const pageCanvas of pageCanvases) {
+      stitchedCtx.drawImage(pageCanvas, 0, yOffset);
+      yOffset += pageCanvas.height + 80;
+    }
+    const shapeMask = buildShapeMaskFromCanvas(stitchedCanvas);
     return {
       tokens: nodesTokens,
       connectorTokens,
+      shapeMask,
       sourceWidth: maxW || 1600,
       sourceHeight: sumH || 1200,
       mode: "pdf-ocr"
@@ -465,7 +547,49 @@
     return !nodes.some((n) => n.id !== from.id && n.id !== to.id && n.cy >= top && n.cy <= bottom && n.cx >= left && n.cx <= right);
   }
 
-  function inferEdges(nodes, connectorTokens) {
+  function shapeLineDensity(shapeMask, x1, y1, x2, y2) {
+    if (!shapeMask?.mask?.length) return 0;
+    const w = shapeMask.width;
+    const h = shapeMask.height;
+    const data = shapeMask.mask;
+    const steps = Math.max(8, Math.ceil(Math.hypot(x2 - x1, y2 - y1) / 3));
+    let hits = 0;
+    let total = 0;
+
+    for (let i = 0; i <= steps; i += 1) {
+      const t = i / steps;
+      const x = Math.round(x1 + (x2 - x1) * t);
+      const y = Math.round(y1 + (y2 - y1) * t);
+      if (x < 1 || y < 1 || x >= w - 1 || y >= h - 1) continue;
+      total += 1;
+      const idx = y * w + x;
+      const near = data[idx] || data[idx - 1] || data[idx + 1] || data[idx - w] || data[idx + w];
+      if (near) hits += 1;
+    }
+
+    return total ? hits / total : 0;
+  }
+
+  function hasShapeLineBetween(from, to, shapeMask) {
+    if (!shapeMask?.mask?.length) return false;
+
+    const horizontal = shapeLineDensity(shapeMask, from.right + 4, from.cy, to.left - 4, to.cy);
+    const vertical = shapeLineDensity(shapeMask, from.cx, from.bottom + 4, to.cx, to.top - 4);
+
+    const hv = Math.min(
+      shapeLineDensity(shapeMask, from.right + 4, from.cy, to.cx, from.cy),
+      shapeLineDensity(shapeMask, to.cx, from.cy, to.cx, to.top - 4)
+    );
+    const vh = Math.min(
+      shapeLineDensity(shapeMask, from.cx, from.bottom + 4, from.cx, to.cy),
+      shapeLineDensity(shapeMask, from.cx, to.cy, to.left - 4, to.cy)
+    );
+
+    const best = Math.max(horizontal, vertical, hv, vh);
+    return best >= 0.24;
+  }
+
+  function inferEdges(nodes, connectorTokens, shapeMask) {
     const rows = groupRows(nodes);
     const edges = [];
     const seen = new Set();
@@ -490,10 +614,12 @@
         const from = row.nodes[i];
         const to = row.nodes[i + 1];
         const byConnector = hasConnectorHints && hasConnectorBetween(from, to, connectorTokens);
+        const byShape = hasShapeLineBetween(from, to, shapeMask);
         const byGeometry = !hasConnectorHints
           && seemsConnectedByGeometry(from, to, nodes, metrics)
-          && corridorIsClear(from, to, nodes, "h");
-        if (byConnector || byGeometry) addEdge(from, to);
+          && corridorIsClear(from, to, nodes, "h")
+          && byShape;
+        if (byConnector || byGeometry || byShape) addEdge(from, to);
       }
     }
 
@@ -518,10 +644,12 @@
 
         if (!best) continue;
         const byConnector = hasConnectorHints && hasConnectorBetween(n, best, connectorTokens);
+        const byShape = hasShapeLineBetween(n, best, shapeMask);
         const byGeometry = !hasConnectorHints
           && seemsConnectedByGeometry(n, best, nodes, metrics)
-          && corridorIsClear(n, best, nodes, "v");
-        if (byConnector || byGeometry) addEdge(n, best);
+          && corridorIsClear(n, best, nodes, "v")
+          && byShape;
+        if (byConnector || byGeometry || byShape) addEdge(n, best);
       }
     }
 
@@ -606,41 +734,18 @@
   function buildFlowFromTokens(extraction) {
     const clustered = clusterTokens(extraction.tokens);
     const mergedWrapped = mergeLineBreakFragments(clustered);
-    const filtered = dedupeNodes(mergedWrapped).filter((n) => n.label.length <= 140);
+    const sourceNodes = dedupeNodes(mergedWrapped)
+      .filter((n) => n.label.length <= 140)
+      .map((n, idx) => ({ ...n, id: `ocr_${idx}_${Math.random().toString(36).slice(2, 6)}` }));
 
-    if (!filtered.length) {
+    if (!sourceNodes.length) {
       throw new Error("No se detectaron nodos con texto útil. Prueba con una imagen más nítida o PDF digital.");
     }
 
-    const positionedRaw = mapToCanvas(filtered, extraction.sourceWidth, extraction.sourceHeight)
-      .map((n, idx) => ({ ...n, id: `ocr_${idx}_${Math.random().toString(36).slice(2, 6)}` }));
+    const edges = inferEdges(sourceNodes, extraction.connectorTokens || [], extraction.shapeMask || null);
+
+    const positionedRaw = mapToCanvas(sourceNodes, extraction.sourceWidth, extraction.sourceHeight);
     const positioned = resolveOverlaps(positionedRaw);
-
-    const connectorTokens = (extraction.connectorTokens || []).map((c) => {
-      const minX = Math.min(...filtered.map((n) => n.left));
-      const maxX = Math.max(...filtered.map((n) => n.right));
-      const minY = Math.min(...filtered.map((n) => n.top));
-      const maxY = Math.max(...filtered.map((n) => n.bottom));
-      const boxW = Math.max(200, maxX - minX);
-      const boxH = Math.max(120, maxY - minY);
-      const canvasW = Math.max(extraction.sourceWidth || 1800, 1400);
-      const canvasH = Math.max(extraction.sourceHeight || 1200, 900);
-      const marginX = 120;
-      const marginY = 100;
-      const targetW = Math.max(400, canvasW - marginX * 2);
-      const targetH = Math.max(300, canvasH - marginY * 2);
-      const scale = Math.min(targetW / boxW, targetH / boxH);
-      const usedW = boxW * scale;
-      const usedH = boxH * scale;
-      const offsetX = marginX + (targetW - usedW) / 2;
-      const offsetY = marginY + (targetH - usedH) / 2;
-      return {
-        cx: offsetX + (c.cx - minX) * scale,
-        cy: offsetY + (c.cy - minY) * scale
-      };
-    });
-
-    const edges = inferEdges(positioned, connectorTokens);
 
     // 1) Dibujar primero nodos por coordenadas (sin depender de texto final)
     Engine.clearAll();

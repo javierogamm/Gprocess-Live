@@ -1,5 +1,10 @@
 # Historial de cambios
 
+## v1.1.52
+- Reforzada la identificación de conexiones con enfoque en **formas y líneas**: se añade una máscara geométrica del diagrama (raster) y validación de trazo entre nodos para confirmar conexiones reales.
+- En PDF e imagen, ahora se analiza primero la geometría visual (nodos/líneas), y se usa OCR para incorporar texto después del trazado estructural.
+- Reducidos falsos nodos por saltos de línea manteniendo la fusión de fragmentos multilinea antes de construir el grafo final.
+
 ## v1.1.51
 - Mejorado el pipeline de importación para priorizar secuencia: primero ubicación de nodos, después conexiones y finalmente incorporación de textos en nodos.
 - Reducida la creación de nodos falsos por saltos de línea: se fusionan fragmentos multilinea del mismo bloque antes de deduplicar.
