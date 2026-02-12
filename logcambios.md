@@ -1,5 +1,10 @@
 # Historial de cambios
 
+## v1.1.51
+- Mejorado el pipeline de importación para priorizar secuencia: primero ubicación de nodos, después conexiones y finalmente incorporación de textos en nodos.
+- Reducida la creación de nodos falsos por saltos de línea: se fusionan fragmentos multilinea del mismo bloque antes de deduplicar.
+- Mejorada la detección de conexiones en imagen/PDF con validación de corredor libre entre nodos y fallback geométrico más estable cuando no hay flechas OCR explícitas.
+
 ## v1.1.50
 - Corregida la regresión que dejaba el OCR sin conexiones: cuando no hay símbolos de flecha detectados, ahora se aplica una inferencia geométrica controlada (alineación + distancia + sin nodos intermedios) para reconstruir líneas reales sin inventar enlaces masivos.
 - Mantenida la prioridad de conectores explícitos cuando existen; si se detectan, se usan como evidencia principal para dibujar conexiones.

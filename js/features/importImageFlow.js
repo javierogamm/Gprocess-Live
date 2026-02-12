@@ -362,6 +362,48 @@
     return Array.from(byLabel.values());
   }
 
+  function mergeLineBreakFragments(nodes) {
+    if (!nodes.length) return nodes;
+    const sorted = [...nodes].sort((a, b) => (a.top - b.top) || (a.left - b.left));
+    const consumed = new Set();
+    const merged = [];
+
+    for (let i = 0; i < sorted.length; i += 1) {
+      if (consumed.has(i)) continue;
+      let base = { ...sorted[i] };
+
+      for (let j = i + 1; j < sorted.length; j += 1) {
+        if (consumed.has(j)) continue;
+        const cand = sorted[j];
+        const overlapX = Math.max(0, Math.min(base.right, cand.right) - Math.max(base.left, cand.left));
+        const minW = Math.min(base.width, cand.width);
+        const xAligned = overlapX >= minW * 0.55 || Math.abs(base.cx - cand.cx) <= Math.max(18, minW * 0.22);
+        const verticalGap = cand.top - base.bottom;
+        const nearBelow = verticalGap >= -6 && verticalGap <= Math.max(26, Math.min(base.height, cand.height) * 0.9);
+
+        if (xAligned && nearBelow) {
+          base = {
+            ...base,
+            label: `${base.label} ${cand.label}`.replace(/\s+/g, " ").trim(),
+            left: Math.min(base.left, cand.left),
+            top: Math.min(base.top, cand.top),
+            right: Math.max(base.right, cand.right),
+            bottom: Math.max(base.bottom, cand.bottom)
+          };
+          base.width = base.right - base.left;
+          base.height = base.bottom - base.top;
+          base.cx = (base.left + base.right) / 2;
+          base.cy = (base.top + base.bottom) / 2;
+          consumed.add(j);
+        }
+      }
+
+      merged.push(base);
+    }
+
+    return merged;
+  }
+
   function hasConnectorBetween(from, to, connectorTokens) {
     if (!Array.isArray(connectorTokens) || !connectorTokens.length) return false;
     const margin = 30;
@@ -406,6 +448,23 @@
     return false;
   }
 
+  function corridorIsClear(from, to, nodes, axis) {
+    const pad = 12;
+    if (axis === "h") {
+      const left = Math.min(from.cx, to.cx) + pad;
+      const right = Math.max(from.cx, to.cx) - pad;
+      const top = Math.min(from.cy, to.cy) - 20;
+      const bottom = Math.max(from.cy, to.cy) + 20;
+      return !nodes.some((n) => n.id !== from.id && n.id !== to.id && n.cx >= left && n.cx <= right && n.cy >= top && n.cy <= bottom);
+    }
+
+    const top = Math.min(from.cy, to.cy) + pad;
+    const bottom = Math.max(from.cy, to.cy) - pad;
+    const left = Math.min(from.cx, to.cx) - 28;
+    const right = Math.max(from.cx, to.cx) + 28;
+    return !nodes.some((n) => n.id !== from.id && n.id !== to.id && n.cy >= top && n.cy <= bottom && n.cx >= left && n.cx <= right);
+  }
+
   function inferEdges(nodes, connectorTokens) {
     const rows = groupRows(nodes);
     const edges = [];
@@ -431,7 +490,9 @@
         const from = row.nodes[i];
         const to = row.nodes[i + 1];
         const byConnector = hasConnectorHints && hasConnectorBetween(from, to, connectorTokens);
-        const byGeometry = !hasConnectorHints && seemsConnectedByGeometry(from, to, nodes, metrics);
+        const byGeometry = !hasConnectorHints
+          && seemsConnectedByGeometry(from, to, nodes, metrics)
+          && corridorIsClear(from, to, nodes, "h");
         if (byConnector || byGeometry) addEdge(from, to);
       }
     }
@@ -457,7 +518,9 @@
 
         if (!best) continue;
         const byConnector = hasConnectorHints && hasConnectorBetween(n, best, connectorTokens);
-        const byGeometry = !hasConnectorHints && seemsConnectedByGeometry(n, best, nodes, metrics);
+        const byGeometry = !hasConnectorHints
+          && seemsConnectedByGeometry(n, best, nodes, metrics)
+          && corridorIsClear(n, best, nodes, "v");
         if (byConnector || byGeometry) addEdge(n, best);
       }
     }
@@ -542,7 +605,8 @@
 
   function buildFlowFromTokens(extraction) {
     const clustered = clusterTokens(extraction.tokens);
-    const filtered = dedupeNodes(clustered).filter((n) => n.label.length <= 120);
+    const mergedWrapped = mergeLineBreakFragments(clustered);
+    const filtered = dedupeNodes(mergedWrapped).filter((n) => n.label.length <= 140);
 
     if (!filtered.length) {
       throw new Error("No se detectaron nodos con texto útil. Prueba con una imagen más nítida o PDF digital.");
@@ -578,15 +642,16 @@
 
     const edges = inferEdges(positioned, connectorTokens);
 
+    // 1) Dibujar primero nodos por coordenadas (sin depender de texto final)
     Engine.clearAll();
 
     const engineIdByTemp = new Map();
     for (const node of positioned) {
       const created = Engine.createNode(chooseNodeType(node.label), node.drawX, node.drawY);
-      Engine.updateNode(created.id, { titulo: node.label });
       engineIdByTemp.set(node.id, created.id);
     }
 
+    // 2) Dibujar conexiones entre nodos
     for (const edge of edges) {
       const fromId = engineIdByTemp.get(edge.from);
       const toId = engineIdByTemp.get(edge.to);
@@ -596,6 +661,13 @@
       const toNode = positioned.find((n) => n.id === edge.to);
       const isVertical = Math.abs((toNode?.cx || 0) - (fromNode?.cx || 0)) < Math.abs((toNode?.cy || 0) - (fromNode?.cy || 0));
       Engine.createConnection(fromId, toId, isVertical ? "bottom" : "right", isVertical ? "top" : "left");
+    }
+
+    // 3) Volcar texto en nodos una vez fijadas posiciones y conexiones
+    for (const node of positioned) {
+      const realId = engineIdByTemp.get(node.id);
+      if (!realId) continue;
+      Engine.updateNode(realId, { titulo: node.label });
     }
 
     Renderer.redrawConnections();
