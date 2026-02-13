@@ -1,5 +1,10 @@
 # Historial de cambios
 
+## v1.1.50
+- Corregido el error en la importación desde APP CODE que detenía el proceso con `TypeError: Renderer.updateNode is not a function` al pulsar **Cargar**.
+- Sustituida la llamada incorrecta al renderer por la actualización oficial vía `Engine.updateNode`, garantizando que cada plantilla importada se cree y se rotule correctamente como nodo.
+- Se mantiene el comportamiento de descomponer plantillas separadas por comas, usar valores únicos y respetar el tipo indicado entre paréntesis.
+
 ## v1.1.49
 - Consolidada la importación desde APP CODE para descomponer correctamente la columna `plantillas` cuando llega como string o como array con elementos que incluyen múltiples valores separados por comas.
 - Aplicada deduplicación de plantillas para contar y dibujar únicamente valores únicos, evitando que el listado muestre un total incorrecto o que se creen nodos repetidos.

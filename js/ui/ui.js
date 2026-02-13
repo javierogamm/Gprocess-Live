@@ -1388,7 +1388,7 @@ const importProjectFromCodeApp = () => {
         const parsed = parseCodeAppTemplate(plantilla);
         const nodo = Engine.createNode(parsed.tipo, startX, startY + index * gapY);
         nodo.titulo = parsed.titulo;
-        Renderer.updateNode(nodo.id);
+        Engine.updateNode(nodo.id, { titulo: parsed.titulo });
     });
 
     Engine.fichaProyecto = {
