@@ -68,6 +68,7 @@
                     <input type="file" id="fileLoader" accept=".json" style="display:none" onchange="loadJSONFile(event)">
                     <button class="btn" id="btnImportJSON" onclick="document.getElementById('fileLoader').click()">📂 Cargar Json</button>
                     <button class="btn" id="btnLoadJSONDb">🗄️ Cargar de BDD</button>
+                    <button class="btn" id="btnLoadCodeApp">🧩 Cargar desde APP CODE</button>
                     <div class="json-buttons-row">
                         <button id="btnPasteJSON">📋 Pegar JSON</button>
                         <button id="btnIAJson" title="Abrir asistente IA JSON">
@@ -278,6 +279,35 @@
                     <button id="flowDbOverwriteAction" class="btn btn-flowdb" style="display:none;">Sobrescribir</button>
                     <button id="flowDbDeleteAction" class="btn btn-flowdb" style="display:none;">Eliminar</button>
                     <button id="flowDbPrimaryAction" class="btn btn-flowdb">Guardar</button>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
+<!-- =========================
+    MODAL CARGAR DESDE APP CODE (Code_Markdowns)
+========================= -->
+<div id="codeAppModal" class="modal hidden">
+    <div class="modal-content modal-content--wide flow-db-modal">
+        <div class="csv-modal-header flow-db-header">
+            <div class="flow-db-title">
+                <h2>Cargar desde APP CODE</h2>
+                <p>Selecciona subfunción y proyecto para importar plantillas como nodos formulario.</p>
+            </div>
+            <button id="codeAppClose" class="csv-close-btn" aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="flow-db-body">
+            <aside class="flow-db-sidebar">
+                <div class="flow-db-sidebar-header">
+                    <h3>Subfunciones</h3>
+                </div>
+                <div id="codeAppFolders" class="flow-db-folders"></div>
+            </aside>
+            <section class="flow-db-content">
+                <div id="codeAppList" class="flow-db-list"></div>
+                <div class="flow-db-actions">
+                    <button id="codeAppLoadAction" class="btn btn-flowdb">Cargar</button>
                 </div>
             </section>
         </div>

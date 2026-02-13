@@ -1,5 +1,11 @@
 # Historial de cambios
 
+## v1.1.47
+- Añadido el botón **"Cargar desde APP CODE"** en la sección de carga para abrir un modal dedicado a la tabla `Code_Markdowns`.
+- Incorporado un nuevo modal de importación organizado por **subfunción** (carpetas) y listado de **proyectos** para seleccionar qué registro cargar.
+- Implementado el endpoint `GET /api/code-markdowns` para leer proyectos y plantillas de Supabase, normalizando el campo de plantillas (incluyendo variantes `plantilla/plantillas`).
+- Al confirmar la carga, la app limpia el diagrama actual, crea nodos de tipo **formulario** por cada plantilla importada y asigna el nombre del proyecto al procedimiento actual.
+
 ## v1.1.46
 - Ajustado el botón **Sobrescribir** del modal BDD para que, tras actualizar correctamente el registro seleccionado, cierre el modal automáticamente.
 - Mantenida la actualización sobre la misma fila (mismo ID) antes del cierre para conservar la sobrescritura en el registro original.
