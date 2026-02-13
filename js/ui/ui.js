@@ -749,12 +749,22 @@ const flowDbPrimaryAction = document.getElementById("flowDbPrimaryAction");
 const flowDbOverwriteAction = document.getElementById("flowDbOverwriteAction");
 const flowDbDeleteAction = document.getElementById("flowDbDeleteAction");
 const flowDbNewSubfuncion = document.getElementById("flowDbNewSubfuncion");
+const btnLoadCodeApp = document.getElementById("btnLoadCodeApp");
+const codeAppModal = document.getElementById("codeAppModal");
+const codeAppClose = document.getElementById("codeAppClose");
+const codeAppFolders = document.getElementById("codeAppFolders");
+const codeAppList = document.getElementById("codeAppList");
+const codeAppLoadAction = document.getElementById("codeAppLoadAction");
 
 let flowDbItems = [];
 let flowDbMode = "load";
 let flowDbSubfunciones = [];
 let flowDbActiveSubfuncion = "";
 let flowDbSelectedId = null;
+let codeAppItems = [];
+let codeAppSubfunciones = [];
+let codeAppActiveSubfuncion = "";
+let codeAppSelectedId = null;
 
 const normalizeSubfuncion = (value) => {
     if (typeof value === "string" && value.trim()) {
@@ -1212,6 +1222,198 @@ if (flowDbSubfuncionInput) {
         );
         setActiveSubfuncion(nextName);
     });
+}
+
+const closeCodeAppModal = () => {
+    if (codeAppModal) codeAppModal.classList.add("hidden");
+};
+
+const getSelectedCodeAppItem = () =>
+    codeAppItems.find((item) => String(item.id) === String(codeAppSelectedId)) || null;
+
+const renderCodeAppFolders = () => {
+    if (!codeAppFolders) return;
+    codeAppFolders.innerHTML = "";
+
+    codeAppSubfunciones.forEach((subfuncion) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "flow-db-folder";
+        if (subfuncion === codeAppActiveSubfuncion) {
+            button.classList.add("flow-db-folder--active");
+        }
+        button.innerHTML = `<span>📁</span><span>${subfuncion}</span>`;
+        button.addEventListener("click", () => {
+            codeAppSelectedId = null;
+            codeAppActiveSubfuncion = subfuncion;
+            renderCodeAppFolders();
+            renderCodeAppList();
+        });
+        codeAppFolders.appendChild(button);
+    });
+};
+
+const renderCodeAppList = () => {
+    if (!codeAppList) return;
+    codeAppList.innerHTML = "";
+
+    const items = codeAppItems.filter(
+        (item) => normalizeSubfuncion(item.subfuncion) === codeAppActiveSubfuncion
+    );
+
+    if (!items.length) {
+        const empty = document.createElement("p");
+        empty.textContent = "No hay proyectos disponibles en esta subfunción.";
+        empty.style.color = "#64748b";
+        codeAppList.appendChild(empty);
+        return;
+    }
+
+    items.forEach((item) => {
+        const row = document.createElement("button");
+        row.type = "button";
+        row.className = "flow-db-item";
+        if (String(item.id) === String(codeAppSelectedId)) {
+            row.classList.add("flow-db-item--active");
+        }
+
+        const plantillas = Array.isArray(item.plantillas) ? item.plantillas : [];
+        row.innerHTML = `
+            <h4>${item.proyecto || "Proyecto sin nombre"}</h4>
+            <p>${plantillas.length} plantilla${plantillas.length === 1 ? "" : "s"}</p>
+        `;
+        row.addEventListener("click", () => {
+            codeAppSelectedId = item.id;
+            renderCodeAppList();
+        });
+        codeAppList.appendChild(row);
+    });
+};
+
+const openCodeAppModal = async () => {
+    if (!codeAppModal) return;
+
+    try {
+        const response = await fetch("/api/code-markdowns");
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data?.error || "No se pudieron cargar los proyectos de APP CODE.");
+        }
+
+        codeAppItems = Array.isArray(data?.data) ? data.data : [];
+        codeAppSubfunciones = [...new Set(codeAppItems.map((item) => normalizeSubfuncion(item.subfuncion)))];
+        codeAppSubfunciones.sort((a, b) => a.localeCompare(b, "es"));
+        codeAppActiveSubfuncion = codeAppSubfunciones[0] || "Sin subfunción";
+        codeAppSelectedId = null;
+        renderCodeAppFolders();
+        renderCodeAppList();
+        codeAppModal.classList.remove("hidden");
+    } catch (error) {
+        console.error("Error cargando APP CODE:", error);
+        alert("❌ No se pudieron cargar los proyectos desde APP CODE.");
+    }
+};
+
+const parseCodeAppTemplate = (templateLabel) => {
+    const raw = typeof templateLabel === "string" ? templateLabel.trim() : "";
+    if (!raw) {
+        return { titulo: "FORMULARIO", tipo: "formulario" };
+    }
+
+    const match = raw.match(/^(.*)\(([^()]+)\)\s*$/);
+    const titlePart = match ? match[1].trim() : raw;
+    const typePart = match ? match[2].trim() : "Formulario";
+
+    const normalizeType = typePart
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[\s_-]+/g, "");
+
+    const typeMap = {
+        formulario: "formulario",
+        subproceso: "subproceso",
+        documento: "documento",
+        libre: "libre",
+        decision: "decision",
+        decisionr: "decisionR",
+        circuito: "circuito",
+        plazo: "plazo",
+        operacionexterna: "operacion_externa",
+        notas: "notas"
+    };
+
+    return {
+        titulo: (titlePart || raw || "FORMULARIO").toUpperCase(),
+        tipo: typeMap[normalizeType] || "formulario"
+    };
+};
+
+const importProjectFromCodeApp = () => {
+    const selected = getSelectedCodeAppItem();
+    if (!selected) {
+        alert("Selecciona un proyecto para cargar.");
+        return;
+    }
+
+    const plantillas = Array.isArray(selected.plantillas)
+        ? selected.plantillas.filter((item) => typeof item === "string" && item.trim())
+        : [];
+
+    if (!plantillas.length) {
+        alert("El proyecto seleccionado no tiene plantillas para importar.");
+        return;
+    }
+
+    const confirmReplace = confirm("Se reemplazará el diagrama actual por el proyecto importado. ¿Continuar?");
+    if (!confirmReplace) return;
+
+    Engine.clearAll();
+
+    const startX = 120;
+    const startY = 120;
+    const gapY = 120;
+
+    plantillas.forEach((plantilla, index) => {
+        const parsed = parseCodeAppTemplate(plantilla);
+        const nodo = Engine.createNode(parsed.tipo, startX, startY + index * gapY);
+        nodo.titulo = parsed.titulo;
+        Renderer.updateNode(nodo.id);
+    });
+
+    Engine.fichaProyecto = {
+        ...(Engine.fichaProyecto || {}),
+        procedimiento: selected.proyecto || "",
+    };
+
+    const titleDiv = document.getElementById("projectTitle");
+    if (titleDiv) {
+        titleDiv.innerText = (selected.proyecto || "").toUpperCase();
+    }
+
+    Engine.saveHistory();
+    closeCodeAppModal();
+    alert("✅ Proyecto importado desde APP CODE.");
+};
+
+if (btnLoadCodeApp) {
+    btnLoadCodeApp.addEventListener("click", openCodeAppModal);
+}
+
+if (codeAppClose) {
+    codeAppClose.addEventListener("click", closeCodeAppModal);
+}
+
+if (codeAppModal) {
+    codeAppModal.addEventListener("click", (event) => {
+        if (event.target === codeAppModal) {
+            closeCodeAppModal();
+        }
+    });
+}
+
+if (codeAppLoadAction) {
+    codeAppLoadAction.addEventListener("click", importProjectFromCodeApp);
 }
    
    /* ========================================================
