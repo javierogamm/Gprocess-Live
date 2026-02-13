@@ -1,5 +1,11 @@
 # Historial de cambios
 
+## v1.1.52
+- Añadido soporte de actualización de `ultimo_acceso_process` para sesiones restauradas desde almacenamiento del navegador (cookie/cache/localStorage), sin requerir nuevo login manual.
+- Extendido el endpoint `api/users` con método `PATCH` para registrar el último acceso a partir del `id` de usuario ya autenticado.
+- Actualizada la inicialización de sesión en la UI para notificar al backend y persistir en local el usuario devuelto tras refrescar el último acceso.
+- Consolidación de cambios de trazabilidad de accesos con versionado de la APP.
+
 ## v1.1.51
 - Registrado el `ultimo_acceso_process` en la tabla `users` durante el login, guardando un timestamp ISO en cada autenticación correcta.
 - Ajustado el endpoint `POST /api/users` para actualizar y devolver el valor de `ultimo_acceso_process` junto con los datos del usuario autenticado.
