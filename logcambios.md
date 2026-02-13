@@ -1,5 +1,10 @@
 # Historial de cambios
 
+## v1.1.48
+- Corregida la importación desde APP CODE para crear **un nodo individual por cada plantilla** separada por comas en el campo de plantillas.
+- Añadido parseo del tipo de nodo desde el sufijo entre paréntesis de cada plantilla, por ejemplo `Nombre (Formulario)`, creando el tipo correspondiente (`formulario`, `documento`, `subproceso`, etc.).
+- Ajustada la lectura de `Code_Markdowns` para recuperar los datos con `select("*")` y soportar variantes de esquema (`plantillas`/`plantilla`) durante la normalización.
+
 ## v1.1.47
 - Añadido el botón **"Cargar desde APP CODE"** en la sección de carga para abrir un modal dedicado a la tabla `Code_Markdowns`.
 - Incorporado un nuevo modal de importación organizado por **subfunción** (carpetas) y listado de **proyectos** para seleccionar qué registro cargar.

@@ -52,7 +52,7 @@ module.exports = async (req, res) => {
 
   const { data, error } = await supabase
     .from("Code_Markdowns")
-    .select("id, created_at, proyecto, subfuncion, plantilla, json")
+    .select("*")
     .order("subfuncion", { ascending: true })
     .order("proyecto", { ascending: true })
     .order("id", { ascending: true });

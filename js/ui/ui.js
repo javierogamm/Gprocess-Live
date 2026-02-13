@@ -1314,6 +1314,41 @@ const openCodeAppModal = async () => {
     }
 };
 
+const parseCodeAppTemplate = (templateLabel) => {
+    const raw = typeof templateLabel === "string" ? templateLabel.trim() : "";
+    if (!raw) {
+        return { titulo: "FORMULARIO", tipo: "formulario" };
+    }
+
+    const match = raw.match(/^(.*)\(([^()]+)\)\s*$/);
+    const titlePart = match ? match[1].trim() : raw;
+    const typePart = match ? match[2].trim() : "Formulario";
+
+    const normalizeType = typePart
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[\s_-]+/g, "");
+
+    const typeMap = {
+        formulario: "formulario",
+        subproceso: "subproceso",
+        documento: "documento",
+        libre: "libre",
+        decision: "decision",
+        decisionr: "decisionR",
+        circuito: "circuito",
+        plazo: "plazo",
+        operacionexterna: "operacion_externa",
+        notas: "notas"
+    };
+
+    return {
+        titulo: (titlePart || raw || "FORMULARIO").toUpperCase(),
+        tipo: typeMap[normalizeType] || "formulario"
+    };
+};
+
 const importProjectFromCodeApp = () => {
     const selected = getSelectedCodeAppItem();
     if (!selected) {
@@ -1340,8 +1375,9 @@ const importProjectFromCodeApp = () => {
     const gapY = 120;
 
     plantillas.forEach((plantilla, index) => {
-        const nodo = Engine.createNode("formulario", startX, startY + index * gapY);
-        nodo.titulo = plantilla;
+        const parsed = parseCodeAppTemplate(plantilla);
+        const nodo = Engine.createNode(parsed.tipo, startX, startY + index * gapY);
+        nodo.titulo = parsed.titulo;
         Renderer.updateNode(nodo.id);
     });
 
