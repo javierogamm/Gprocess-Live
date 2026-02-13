@@ -1,5 +1,11 @@
 # Historial de cambios
 
+## v1.1.49
+- Consolidada la importación desde APP CODE para descomponer correctamente la columna `plantillas` cuando llega como string o como array con elementos que incluyen múltiples valores separados por comas.
+- Aplicada deduplicación de plantillas para contar y dibujar únicamente valores únicos, evitando que el listado muestre un total incorrecto o que se creen nodos repetidos.
+- Asegurada en la UI la creación de un nodo por cada plantilla única importada, manteniendo la detección del tipo de nodo indicado entre paréntesis junto al nombre (por ejemplo, `Nombre (Documento)`).
+- Añadida cobertura de pruebas unitarias para validar el split por comas dentro de arrays y la normalización con plantillas únicas.
+
 ## v1.1.48
 - Corregida la importación desde APP CODE para crear **un nodo individual por cada plantilla** separada por comas en el campo de plantillas.
 - Añadido parseo del tipo de nodo desde el sufijo entre paréntesis de cada plantilla, por ejemplo `Nombre (Formulario)`, creando el tipo correspondiente (`formulario`, `documento`, `subproceso`, etc.).

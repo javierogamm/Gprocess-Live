@@ -1277,7 +1277,7 @@ const renderCodeAppList = () => {
             row.classList.add("flow-db-item--active");
         }
 
-        const plantillas = Array.isArray(item.plantillas) ? item.plantillas : [];
+        const plantillas = getUniqueCodeAppTemplates(item.plantillas);
         row.innerHTML = `
             <h4>${item.proyecto || "Proyecto sin nombre"}</h4>
             <p>${plantillas.length} plantilla${plantillas.length === 1 ? "" : "s"}</p>
@@ -1349,6 +1349,18 @@ const parseCodeAppTemplate = (templateLabel) => {
     };
 };
 
+
+const getUniqueCodeAppTemplates = (rawTemplates) => {
+    if (!Array.isArray(rawTemplates)) return [];
+
+    return [...new Set(
+        rawTemplates
+            .flatMap((item) => (typeof item === "string" ? item.split(",") : []))
+            .map((item) => item.trim())
+            .filter(Boolean)
+    )];
+};
+
 const importProjectFromCodeApp = () => {
     const selected = getSelectedCodeAppItem();
     if (!selected) {
@@ -1356,9 +1368,7 @@ const importProjectFromCodeApp = () => {
         return;
     }
 
-    const plantillas = Array.isArray(selected.plantillas)
-        ? selected.plantillas.filter((item) => typeof item === "string" && item.trim())
-        : [];
+    const plantillas = getUniqueCodeAppTemplates(selected.plantillas);
 
     if (!plantillas.length) {
         alert("El proyecto seleccionado no tiene plantillas para importar.");
