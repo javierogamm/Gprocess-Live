@@ -682,6 +682,27 @@ const handleUserSubmit = async () => {
     }
 };
 
+const syncStoredSessionLastAccess = async () => {
+    if (!currentUser?.id) return;
+
+    try {
+        const response = await fetch("/api/users", {
+            method: "PATCH",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ id: currentUser.id })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data?.error || "No se pudo actualizar el último acceso.");
+        }
+        persistUser(data.user);
+    } catch (error) {
+        console.warn("No se pudo actualizar el último acceso de la sesión almacenada.", error);
+    }
+};
+
 if (btnUserLogin) {
     btnUserLogin.dataset.authAllow = "true";
 }
@@ -689,6 +710,8 @@ currentUser = readStoredUser();
 syncUserUI();
 if (!currentUser) {
     openUserModal("login");
+} else {
+    syncStoredSessionLastAccess();
 }
 
 if (btnUserLogin) {
