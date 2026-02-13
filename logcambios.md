@@ -1,5 +1,10 @@
 # Historial de cambios
 
+## v1.1.51
+- Registrado el `ultimo_acceso_process` en la tabla `users` durante el login, guardando un timestamp ISO en cada autenticación correcta.
+- Ajustado el endpoint `POST /api/users` para actualizar y devolver el valor de `ultimo_acceso_process` junto con los datos del usuario autenticado.
+- Consolidación de cambios de autenticación y versionado de la APP.
+
 ## v1.1.50
 - Corregido el error en la importación desde APP CODE que detenía el proceso con `TypeError: Renderer.updateNode is not a function` al pulsar **Cargar**.
 - Sustituida la llamada incorrecta al renderer por la actualización oficial vía `Engine.updateNode`, garantizando que cada plantilla importada se cree y se rotule correctamente como nodo.

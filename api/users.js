@@ -53,7 +53,19 @@ module.exports = async (req, res) => {
       return res.status(401).json({ error: "Invalid credentials." });
     }
 
-    return res.status(200).json({ user: data });
+    const lastAccess = new Date().toISOString();
+    const { data: updatedUser, error: updateError } = await supabase
+      .from("users")
+      .update({ ultimo_acceso_process: lastAccess })
+      .eq("id", data.id)
+      .select("id, name, admin, ultimo_acceso_process")
+      .maybeSingle();
+
+    if (updateError) {
+      return res.status(500).json({ error: updateError.message });
+    }
+
+    return res.status(200).json({ user: updatedUser ?? { ...data, ultimo_acceso_process: lastAccess } });
   }
 
   if (req.method === "PUT") {
