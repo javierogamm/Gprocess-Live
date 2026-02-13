@@ -12,7 +12,8 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 const splitPlantillas = (value) => {
   if (Array.isArray(value)) {
     return value
-      .map((item) => (typeof item === "string" ? item.trim() : ""))
+      .flatMap((item) => (typeof item === "string" ? item.split(",") : []))
+      .map((item) => item.trim())
       .filter(Boolean);
   }
 
@@ -33,7 +34,7 @@ const normalizeItem = (item) => {
     : "Sin subfunción";
 
   const rawPlantillas = item?.plantillas ?? item?.plantilla ?? item?.json?.plantillas ?? item?.json?.plantilla;
-  const plantillas = splitPlantillas(rawPlantillas);
+  const plantillas = [...new Set(splitPlantillas(rawPlantillas))];
 
   return {
     id: item?.id,
@@ -44,7 +45,7 @@ const normalizeItem = (item) => {
   };
 };
 
-module.exports = async (req, res) => {
+const handler = async (req, res) => {
   if (req.method !== "GET") {
     res.setHeader("Allow", ["GET"]);
     return res.status(405).json({ error: "Method Not Allowed" });
@@ -63,4 +64,10 @@ module.exports = async (req, res) => {
 
   const normalized = (data || []).map(normalizeItem);
   return res.status(200).json({ data: normalized });
+};
+
+module.exports = handler;
+module.exports.__test__ = {
+  splitPlantillas,
+  normalizeItem,
 };
