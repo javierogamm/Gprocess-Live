@@ -1,5 +1,11 @@
 # Historial de cambios
 
+## v1.1.53
+- Añadido un icono flotante 📝 en nodos de tipo **Formulario** y **Documento**, posicionado a la derecha y por encima del contenido del nodo para abrir la edición de plantilla en un modal.
+- Incorporado un modal de plantilla con edición de texto libre y guardado en el propio nodo (`plantillaTexto`) para conservar el contenido al exportar/importar el flujo.
+- Replicado el acceso al editor de plantilla en el panel lateral derecho, junto al desplegable **Tipo de nodo**, visible solo para tipos **Formulario** y **Documento**.
+- Consolidación de la nueva funcionalidad de plantillas con versionado de la APP.
+
 ## v1.1.52
 - Añadido soporte de actualización de `ultimo_acceso_process` para sesiones restauradas desde almacenamiento del navegador (cookie/cache/localStorage), sin requerir nuevo login manual.
 - Extendido el endpoint `api/users` con método `PATCH` para registrar el último acceso a partir del `id` de usuario ya autenticado.

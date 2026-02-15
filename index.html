@@ -147,17 +147,20 @@
             <label>Título</label>
             <input id="propTitulo" />
             <label>Tipo de nodo</label>
-            <select id="propTipo">
-                <option value="formulario">Formulario</option>
-                <option value="subproceso">Subproceso</option>
-                <option value="documento">Documento</option>
-                <option value="libre">Libre</option>
-                <option value="decision">Decisión</option>
-                <option value="circuito">Circuito Resolución</option>
-                <option value="plazo">Añadir Plazo</option>
-                <option value="operacion_externa">Operación Externa</option>
-                <option value="notas">Nota</option>
-            </select>
+            <div class="prop-tipo-row">
+                <select id="propTipo">
+                    <option value="formulario">Formulario</option>
+                    <option value="subproceso">Subproceso</option>
+                    <option value="documento">Documento</option>
+                    <option value="libre">Libre</option>
+                    <option value="decision">Decisión</option>
+                    <option value="circuito">Circuito Resolución</option>
+                    <option value="plazo">Añadir Plazo</option>
+                    <option value="operacion_externa">Operación Externa</option>
+                    <option value="notas">Nota</option>
+                </select>
+                <button id="btnPlantillaNodo" class="prop-template-btn hidden" type="button" title="Editar plantilla">📝</button>
+            </div>
             <label>Descripción</label>
             <div id="propToolbar" class="prop-toolbar">
                 <button data-cmd="bold" title="Negrita"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M7 5h7a3 3 0 010 6H7zm0 6h8a3 3 0 010 6H7z" fill="currentColor"/></svg></button>
@@ -354,6 +357,19 @@
         </div>
         <div class="user-modal-actions">
             <button id="userModalSubmit" class="btn">Ingresar</button>
+        </div>
+    </div>
+</div>
+
+<div id="templateNodeModal" class="modal hidden" data-auth-allow="true">
+    <div class="modal-content" data-auth-allow="true">
+        <div class="csv-modal-header">
+            <h2 id="templateModalTitle">Plantilla del nodo</h2>
+            <button id="templateModalClose" class="csv-close-btn" aria-label="Cerrar">&times;</button>
+        </div>
+        <textarea id="templateModalTextarea" class="template-modal-textarea" placeholder="Escribe aquí el contenido de la plantilla..."></textarea>
+        <div class="user-modal-actions">
+            <button id="templateModalSave" class="btn">Guardar plantilla</button>
         </div>
     </div>
 </div>
