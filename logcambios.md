@@ -1,5 +1,11 @@
 # Historial de cambios
 
+## v1.1.56
+- Añadida una sección `plantillas` en el JSON exportado/importado del flujo para guardar el contenido de plantilla por ID de nodo y facilitar su persistencia explícita.
+- Mantenida la compatibilidad retroactiva con flujos sin plantillas y con formatos anteriores (`nodes/connections`), reconstruyendo `plantillaTexto` en nodos cuando existe la nueva sección y regenerando `plantillas` al normalizar.
+- Extendida la normalización de `api/process-flows` para guardar/cargar en BDD el aditivo de plantillas dentro de `flow`, asegurando compatibilidad tanto para registros legacy como para los nuevos.
+- Consolidación de versión de la app en `1.1.56`.
+
 ## v1.1.55
 - Actualizada la exportación de flujo a CSV para que la columna **Texto plantilla** use el contenido real configurado en cada nodo formulario y mantenga el valor por defecto únicamente cuando no exista plantilla.
 - Corregido el serializado CSV de tareas y condiciones para escapar correctamente celdas con saltos de línea, comillas o separadores, preservando el formato multilínea de las plantillas en la exportación.

@@ -67,12 +67,55 @@ const normalizeNodeType = (tipo) => {
   return raw.toLowerCase();
 };
 
+const normalizeTemplatesPayload = (rawTemplates) => {
+  if (!rawTemplates || typeof rawTemplates !== "object") {
+    return {};
+  }
+
+  if (Array.isArray(rawTemplates)) {
+    return rawTemplates.reduce((acc, item) => {
+      const nodeId = item?.id ?? item?.nodeId;
+      if (!nodeId) return acc;
+      const content = item?.contenido ?? item?.texto ?? item?.plantillaTexto;
+      if (typeof content === "string") {
+        acc[nodeId] = content;
+      }
+      return acc;
+    }, {});
+  }
+
+  return Object.entries(rawTemplates).reduce((acc, [nodeId, value]) => {
+    if (!nodeId) return acc;
+    if (typeof value === "string") {
+      acc[nodeId] = value;
+      return acc;
+    }
+
+    const content = value?.contenido ?? value?.texto ?? value?.plantillaTexto;
+    if (typeof content === "string") {
+      acc[nodeId] = content;
+    }
+
+    return acc;
+  }, {});
+};
+
+const buildTemplatesPayload = (nodes = []) => (Array.isArray(nodes) ? nodes : []).reduce((acc, node) => {
+  if (!node?.id) return acc;
+  const content = typeof node.plantillaTexto === "string" ? node.plantillaTexto : "";
+  if (content.length > 0) {
+    acc[node.id] = content;
+  }
+  return acc;
+}, {});
+
 const normalizeFlow = (flow) => {
   if (!flow || typeof flow !== "object") {
     return flow;
   }
 
   const payload = { ...flow };
+  const templateByNodeId = normalizeTemplatesPayload(payload.plantillas);
   const nodos = Array.isArray(payload.nodos)
     ? payload.nodos
     : (Array.isArray(payload.nodes) ? payload.nodes : []);
@@ -80,12 +123,18 @@ const normalizeFlow = (flow) => {
   payload.nodos = nodos.map((node) => {
     const safe = { ...node };
     safe.tipo = normalizeNodeType(safe.tipo ?? safe.nodeType ?? safe.tipoNodo);
+    const templateContent = templateByNodeId[safe.id];
+    if (typeof templateContent === "string") {
+      safe.plantillaTexto = templateContent;
+    }
     return safe;
   });
 
   if (!Array.isArray(payload.conexiones) && Array.isArray(payload.connections)) {
     payload.conexiones = payload.connections.map((conn) => ({ ...conn }));
   }
+
+  payload.plantillas = buildTemplatesPayload(payload.nodos);
 
   delete payload.nodes;
   delete payload.connections;
