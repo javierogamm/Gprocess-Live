@@ -1386,17 +1386,6 @@ const extractTemplateMarkdown = (template) => {
     return typeof template.markdown === "string" ? template.markdown : "";
 };
 
-const normalizeTemplateNameKey = (value) => {
-    if (typeof value !== "string") return "";
-
-    return value
-        .trim()
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/\s+/g, " ");
-};
-
 const parseCodeAppTemplate = (template) => {
     const raw = extractTemplateLabel(template);
     if (!raw) {
@@ -1457,23 +1446,13 @@ const getUniqueCodeAppTemplates = (rawTemplates) => {
         return [];
     });
 
-    const mergedByName = new Map();
-
-    templates.forEach((template) => {
-        const normalizedKey = normalizeTemplateNameKey(template.nombre) || template.nombre;
-        const existing = mergedByName.get(normalizedKey);
-
-        if (!existing) {
-            mergedByName.set(normalizedKey, template);
-            return;
-        }
-
-        if (!existing.markdown && template.markdown) {
-            mergedByName.set(normalizedKey, template);
-        }
+    const seen = new Set();
+    return templates.filter((template) => {
+        const key = `${template.nombre}::${template.markdown}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
     });
-
-    return Array.from(mergedByName.values());
 };
 
 const importProjectFromCodeApp = () => {
