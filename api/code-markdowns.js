@@ -126,7 +126,7 @@ const mergeTemplatesPreferMarkdown = (templates) => {
 };
 
 const normalizeItem = (item) => {
-  const jsonPayload = parseJsonPayload(item?.json);
+  const jsonPayload = parseJsonPayload(item?.json ?? item?.JSON ?? item?.Json);
   const jsonProyecto = jsonPayload?.proyecto;
 
   const proyecto = typeof item?.proyecto === "string" && item.proyecto.trim()
