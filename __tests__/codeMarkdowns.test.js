@@ -17,7 +17,12 @@ jest.mock('@supabase/supabase-js', () => ({
 
 describe('code-markdowns normalization', () => {
   const codeMarkdowns = require('../api/code-markdowns');
-  const { splitPlantillas, normalizeItem } = codeMarkdowns.__test__;
+  const {
+    splitPlantillas,
+    normalizeItem,
+    extractTemplatesFromJsonPayload,
+    mergeTemplatesPreferMarkdown,
+  } = codeMarkdowns.__test__;
 
   test('splitPlantillas separa por comas dentro de arrays y elimina vacíos', () => {
     expect(splitPlantillas(['A (Formulario), B (Documento)', ' C (Subproceso) ', '', null])).toEqual([
@@ -58,6 +63,44 @@ describe('code-markdowns normalization', () => {
     expect(normalized.plantillas).toEqual([
       { nombre: 'Plantilla 2', markdown: 'Línea 1\nLínea 2' },
       { nombre: 'Plantilla 3', markdown: 'PLAAAA' },
+    ]);
+  });
+
+  test('extractTemplatesFromJsonPayload lee plantilla en la raíz del JSON', () => {
+    const templates = extractTemplatesFromJsonPayload({
+      nombre: 'Solicitud (Formulario)',
+      markdown: 'Contenido en JSON',
+    });
+
+    expect(templates).toEqual([
+      { nombre: 'Solicitud (Formulario)', markdown: 'Contenido en JSON' },
+    ]);
+  });
+
+  test('mergeTemplatesPreferMarkdown conserva una sola plantilla por nombre con markdown útil', () => {
+    const merged = mergeTemplatesPreferMarkdown([
+      { nombre: 'Alta (Formulario)', markdown: '' },
+      { nombre: 'Alta (Formulario)', markdown: 'Plantilla completa' },
+    ]);
+
+    expect(merged).toEqual([
+      { nombre: 'Alta (Formulario)', markdown: 'Plantilla completa' },
+    ]);
+  });
+
+  test('normalizeItem toma markdown desde columna json aunque plantillas venga en texto plano', () => {
+    const normalized = normalizeItem({
+      id: 3,
+      proyecto: 'Proyecto JSON raíz',
+      plantillas: 'Alta (Formulario)',
+      json: JSON.stringify({
+        nombre: 'Alta (Formulario)',
+        markdown: 'Plantilla desde columna JSON',
+      }),
+    });
+
+    expect(normalized.plantillas).toEqual([
+      { nombre: 'Alta (Formulario)', markdown: 'Plantilla desde columna JSON' },
     ]);
   });
 });

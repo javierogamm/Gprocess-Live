@@ -1,5 +1,11 @@
 # Historial de cambios
 
+## v1.1.58
+- Corregida la normalización de `Code_Markdowns` para extraer plantillas con markdown desde variantes adicionales de la columna `json`, incluyendo estructuras con plantilla en raíz (`{ nombre, markdown }`) además de `proyecto.plantillas`.
+- Ajustada la consolidación de plantillas importadas para mantener una única plantilla por nombre y priorizar la versión que sí contiene markdown, evitando que se creen nodos duplicados con plantilla vacía.
+- Extendida la cobertura de pruebas unitarias de `code-markdowns` para validar la lectura de markdown desde `json` en formatos alternativos y la priorización de contenido en la fusión de plantillas.
+- Consolidación de versión de la app en `1.1.58`.
+
 ## v1.1.57
 - Adaptada la normalización de `Code_Markdowns` para leer la columna `json` (objeto o string), extraer `proyecto.nombre` y mapear las plantillas con estructura `{ nombre, markdown }`.
 - Actualizada la importación desde APP CODE para crear nodos a partir de cada plantilla y guardar en cada nodo el contenido real de `markdown`, preservando saltos de línea multilínea.
