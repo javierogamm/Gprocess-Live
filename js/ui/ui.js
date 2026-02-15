@@ -1366,8 +1366,28 @@ const openCodeAppModal = async () => {
     }
 };
 
-const parseCodeAppTemplate = (templateLabel) => {
-    const raw = typeof templateLabel === "string" ? templateLabel.trim() : "";
+const extractTemplateLabel = (template) => {
+    if (typeof template === "string") {
+        return template.trim();
+    }
+
+    if (template && typeof template === "object") {
+        return typeof template.nombre === "string" ? template.nombre.trim() : "";
+    }
+
+    return "";
+};
+
+const extractTemplateMarkdown = (template) => {
+    if (!template || typeof template !== "object") {
+        return "";
+    }
+
+    return typeof template.markdown === "string" ? template.markdown : "";
+};
+
+const parseCodeAppTemplate = (template) => {
+    const raw = extractTemplateLabel(template);
     if (!raw) {
         return { titulo: "FORMULARIO", tipo: "formulario" };
     }
@@ -1405,12 +1425,34 @@ const parseCodeAppTemplate = (templateLabel) => {
 const getUniqueCodeAppTemplates = (rawTemplates) => {
     if (!Array.isArray(rawTemplates)) return [];
 
-    return [...new Set(
-        rawTemplates
-            .flatMap((item) => (typeof item === "string" ? item.split(",") : []))
-            .map((item) => item.trim())
-            .filter(Boolean)
-    )];
+    const templates = rawTemplates.flatMap((item) => {
+        if (typeof item === "string") {
+            return item
+                .split(",")
+                .map((name) => name.trim())
+                .filter(Boolean)
+                .map((name) => ({ nombre: name, markdown: "" }));
+        }
+
+        if (item && typeof item === "object") {
+            const nombre = extractTemplateLabel(item);
+            if (!nombre) return [];
+            return [{
+                nombre,
+                markdown: extractTemplateMarkdown(item)
+            }];
+        }
+
+        return [];
+    });
+
+    const seen = new Set();
+    return templates.filter((template) => {
+        const key = `${template.nombre}::${template.markdown}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
 };
 
 const importProjectFromCodeApp = () => {
@@ -1440,7 +1482,10 @@ const importProjectFromCodeApp = () => {
         const parsed = parseCodeAppTemplate(plantilla);
         const nodo = Engine.createNode(parsed.tipo, startX, startY + index * gapY);
         nodo.titulo = parsed.titulo;
-        Engine.updateNode(nodo.id, { titulo: parsed.titulo });
+        Engine.updateNode(nodo.id, {
+            titulo: parsed.titulo,
+            plantillaTexto: extractTemplateMarkdown(plantilla)
+        });
     });
 
     Engine.fichaProyecto = {
