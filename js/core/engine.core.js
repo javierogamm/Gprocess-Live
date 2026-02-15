@@ -770,6 +770,12 @@ alignSelectedNodes() {
         nodo.tareaManual = props.tareaManual;
     }
 
+    if (props.plantillaTexto !== undefined) {
+        nodo.plantillaTexto = typeof props.plantillaTexto === "string"
+            ? props.plantillaTexto
+            : "";
+    }
+
     // ⭐ Manejo de arrays de asignaciones
     if (props.asignadosGrupos !== undefined) {
         nodo.asignadosGrupos = Array.isArray(props.asignadosGrupos)
