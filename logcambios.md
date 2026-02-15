@@ -1,5 +1,17 @@
 # Historial de cambios
 
+## v1.1.61
+- Añadido un log visible previo a la carga desde APP CODE en el modal, mostrando: nombre de proyecto, lista de plantillas, contenido markdown (preview) y estado del markdown por plantilla.
+- Extendida la normalización de `api/code-markdowns` para devolver trazas por plantilla (`trazasPlantillas`) indicando origen y causa cuando el markdown viene vacío (JSON sin markdown, solo texto plano en `plantillas`, o sin correlación localizada en JSON).
+- Mantenida la lectura de la columna `json/JSON` interpretando correctamente payloads serializados y claves con variaciones de capitalización para recuperar `proyecto.plantillas`.
+- Consolidación de versión de la app en `1.1.61`.
+
+## v1.1.60
+- Corregida la importación de plantillas desde APP Gestiona Code para vincular por nombre normalizado (sin diferencias de mayúsculas, tildes o espacios), priorizando siempre la versión que sí incluye `markdown`.
+- Mejorada la lectura de la columna `json/JSON` para soportar claves en distintas variantes de capitalización y payloads doblemente serializados, asegurando la extracción de `proyecto.plantillas` y su contenido.
+- Ajustada la deduplicación en el visor de plantillas para evitar nodos duplicados cuando existe una versión vacía y otra con contenido de la misma plantilla.
+- Consolidación de versión de la app en `1.1.60`.
+
 ## v1.1.59
 - Corregida la carga de plantillas desde APP CODE para contemplar también la columna `JSON` (en mayúsculas) además de `json`, permitiendo leer correctamente `proyecto.plantillas` con `{ nombre, markdown }`.
 - Con esta consolidación, la importación vuelve a crear nodos con el contenido real de `markdown` cuando el payload llega en la variante de columna `JSON` (caso detectado en proyectos como Urbanismo).
