@@ -34,6 +34,30 @@ describe('code-markdowns normalization', () => {
       plantillas: ['Alta (Formulario), Firma (Documento)', 'Alta (Formulario)'],
     });
 
-    expect(normalized.plantillas).toEqual(['Alta (Formulario)', 'Firma (Documento)']);
+    expect(normalized.plantillas).toEqual([
+      { nombre: 'Alta (Formulario)', markdown: '' },
+      { nombre: 'Firma (Documento)', markdown: '' },
+    ]);
+  });
+
+  test('normalizeItem lee plantillas desde json serializado conservando markdown multilínea', () => {
+    const normalized = normalizeItem({
+      id: 2,
+      json: JSON.stringify({
+        proyecto: {
+          nombre: 'Multiplesplantillas',
+          plantillas: [
+            { nombre: 'Plantilla 2', markdown: 'Línea 1\nLínea 2' },
+            { nombre: 'Plantilla 3', markdown: 'PLAAAA' },
+          ],
+        },
+      }),
+    });
+
+    expect(normalized.proyecto).toBe('Multiplesplantillas');
+    expect(normalized.plantillas).toEqual([
+      { nombre: 'Plantilla 2', markdown: 'Línea 1\nLínea 2' },
+      { nombre: 'Plantilla 3', markdown: 'PLAAAA' },
+    ]);
   });
 });

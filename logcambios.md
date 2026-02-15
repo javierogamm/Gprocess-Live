@@ -1,5 +1,11 @@
 # Historial de cambios
 
+## v1.1.57
+- Adaptada la normalización de `Code_Markdowns` para leer la columna `json` (objeto o string), extraer `proyecto.nombre` y mapear las plantillas con estructura `{ nombre, markdown }`.
+- Actualizada la importación desde APP CODE para crear nodos a partir de cada plantilla y guardar en cada nodo el contenido real de `markdown`, preservando saltos de línea multilínea.
+- Mantenida la compatibilidad con formatos previos de plantillas en texto plano separadas por coma, incluyendo deduplicación estable para evitar nodos repetidos.
+- Consolidación de versión de la app en `1.1.57`.
+
 ## v1.1.56
 - Añadida una sección `plantillas` en el JSON exportado/importado del flujo para guardar el contenido de plantilla por ID de nodo y facilitar su persistencia explícita.
 - Mantenida la compatibilidad retroactiva con flujos sin plantillas y con formatos anteriores (`nodes/connections`), reconstruyendo `plantillaTexto` en nodos cuando existe la nueva sección y regenerando `plantillas` al normalizar.
