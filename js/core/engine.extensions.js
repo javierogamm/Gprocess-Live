@@ -195,6 +195,9 @@ Engine.exportFlujoCSV = function() {
     
         const generarPlantilla = esDocumento ? "No" : "";
         const cargarDocumento = esDocumento ? "Sí" : "";
+        const plantillaConfigurada = n.tipo.toLowerCase() === "formulario"
+            ? (n.plantillaTexto?.length ? n.plantillaTexto : "Pendiente configurar plantilla")
+            : "";
     
         // 🟢 Fila alineada con headerTareas
         return [
@@ -234,14 +237,14 @@ Engine.exportFlujoCSV = function() {
             "", // Circuito documento
             "", // Título documento
             "", // Tipo documental documento
-            (n.tipo.toLowerCase() === "formulario" ? "Pendiente configurar plantilla" : ""), // Texto plantilla
+            plantillaConfigurada, // Texto plantilla
             "", // Eliminar
             "", // Finalizar en plazo
             "", // Plazo - Número de días
             ""  // Plazo - Tipo de días
         ];
     });
-            const csvTareas = [headerTareas.join(";"), ...tareasRows.map(r => r.join(";"))].join("\n");
+            const csvTareas = [headerTareas.map(escapeCSVCell).join(";"), ...tareasRows.map(r => r.map(escapeCSVCell).join(";"))].join("\n");
 
     // --- 3️⃣ Crear CONDICIONES (formato oficial de condiciones de flujo) ---
     const headerConds = [
@@ -310,7 +313,7 @@ Engine.exportFlujoCSV = function() {
         }
     });
 
-    const csvConds = [headerConds.join(";"), ...condRows.map(r => r.join(";"))].join("\n");
+    const csvConds = [headerConds.map(escapeCSVCell).join(";"), ...condRows.map(r => r.map(escapeCSVCell).join(";"))].join("\n");
 
     // --- 4️⃣ Descargar ambos archivos ---
     downloadCSV(csvTareas, "Tareas.csv");
@@ -329,6 +332,14 @@ Engine.exportFlujoCSV = function() {
             .replace(/<\/?[^>]+(>|$)/g, "") // elimina todas las etiquetas HTML
             .replace(/\s+/g, " ")           // elimina espacios duplicados
             .trim();
+    }
+
+    function escapeCSVCell(value) {
+        const str = value == null ? "" : String(value);
+        if (/[;\n\r\"]/.test(str)) {
+            return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
     }
 
     function capitalizeFirst(txt) {

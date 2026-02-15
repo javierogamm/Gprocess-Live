@@ -1,5 +1,10 @@
 # Historial de cambios
 
+## v1.1.55
+- Actualizada la exportación de flujo a CSV para que la columna **Texto plantilla** use el contenido real configurado en cada nodo formulario y mantenga el valor por defecto únicamente cuando no exista plantilla.
+- Corregido el serializado CSV de tareas y condiciones para escapar correctamente celdas con saltos de línea, comillas o separadores, preservando el formato multilínea de las plantillas en la exportación.
+- Consolidación de versión de la app en `1.1.55`.
+
 ## v1.1.54
 - Ajustado el icono 📝 de plantilla en el canvas para que solo se muestre cuando el nodo de tipo **Formulario** o **Documento** está seleccionado individualmente.
 - Ampliado el modal de plantilla (`templateNodeModal`) para trabajar con mayor ancho/alto visible y facilitar la edición de textos largos.
