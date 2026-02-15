@@ -27,14 +27,37 @@ const splitPlantillas = (value) => {
     .filter(Boolean);
 };
 
+const normalizeNameKey = (value) => {
+  if (typeof value !== "string") return "";
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ");
+};
+
+const readKeyInsensitive = (obj, key) => {
+  if (!obj || typeof obj !== "object") return undefined;
+  if (Object.prototype.hasOwnProperty.call(obj, key)) return obj[key];
+
+  const lowerKey = key.toLowerCase();
+  const matchedKey = Object.keys(obj).find((candidate) => candidate.toLowerCase() === lowerKey);
+  return matchedKey ? obj[matchedKey] : undefined;
+};
+
 const normalizeTemplateObject = (template) => {
   if (!template || typeof template !== "object") {
     return null;
   }
 
-  const nombre = typeof template.nombre === "string" ? template.nombre.trim() : "";
-  const markdown = typeof template.markdown === "string" ? template.markdown : "";
-  const tipo = typeof template.tipo === "string" ? template.tipo.trim() : "";
+  const nombreRaw = readKeyInsensitive(template, "nombre");
+  const markdownRaw = readKeyInsensitive(template, "markdown");
+  const tipoRaw = readKeyInsensitive(template, "tipo");
+
+  const nombre = typeof nombreRaw === "string" ? nombreRaw.trim() : "";
+  const markdown = typeof markdownRaw === "string" ? markdownRaw : "";
+  const tipo = typeof tipoRaw === "string" ? tipoRaw.trim() : "";
 
   if (!nombre && !markdown) {
     return null;
@@ -52,11 +75,25 @@ const parseJsonPayload = (value) => {
   if (typeof value === "object") return value;
   if (typeof value !== "string") return null;
 
-  try {
-    return JSON.parse(value);
-  } catch (error) {
-    return null;
+  let current = value;
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    if (typeof current === "object" && current !== null) {
+      return current;
+    }
+
+    if (typeof current !== "string") {
+      return null;
+    }
+
+    try {
+      current = JSON.parse(current);
+    } catch (error) {
+      return null;
+    }
   }
+
+  return typeof current === "object" && current !== null ? current : null;
 };
 
 const extractTemplatesFromJsonPayload = (jsonPayload) => {
@@ -70,15 +107,18 @@ const extractTemplatesFromJsonPayload = (jsonPayload) => {
     candidates.push(...jsonPayload);
   }
 
-  candidates.push(jsonPayload?.proyecto?.plantillas);
-  candidates.push(jsonPayload?.plantillas);
-  candidates.push(jsonPayload?.plantilla);
+  const proyectoPayload = readKeyInsensitive(jsonPayload, "proyecto");
+  const proyecto = proyectoPayload && typeof proyectoPayload === "object" ? proyectoPayload : null;
 
-  if (jsonPayload?.proyecto && typeof jsonPayload.proyecto === "object") {
-    candidates.push(jsonPayload.proyecto.plantilla);
+  candidates.push(readKeyInsensitive(proyecto, "plantillas"));
+  candidates.push(readKeyInsensitive(jsonPayload, "plantillas"));
+  candidates.push(readKeyInsensitive(jsonPayload, "plantilla"));
+
+  if (proyecto) {
+    candidates.push(readKeyInsensitive(proyecto, "plantilla"));
   }
 
-  if (typeof jsonPayload.nombre === "string" || typeof jsonPayload.markdown === "string") {
+  if (typeof readKeyInsensitive(jsonPayload, "nombre") === "string" || typeof readKeyInsensitive(jsonPayload, "markdown") === "string") {
     candidates.push(jsonPayload);
   }
 
@@ -96,7 +136,7 @@ const mergeTemplatesPreferMarkdown = (templates) => {
   const merged = new Map();
 
   templates.forEach((template) => {
-    const key = template.nombre;
+    const key = normalizeNameKey(template.nombre) || template.nombre;
     const existing = merged.get(key);
 
     if (!existing) {
@@ -127,17 +167,23 @@ const mergeTemplatesPreferMarkdown = (templates) => {
 
 const normalizeItem = (item) => {
   const jsonPayload = parseJsonPayload(item?.json ?? item?.JSON ?? item?.Json);
-  const jsonProyecto = jsonPayload?.proyecto;
+  const jsonProyectoRaw = readKeyInsensitive(jsonPayload, "proyecto");
+  const jsonProyecto = jsonProyectoRaw && typeof jsonProyectoRaw === "object" ? jsonProyectoRaw : null;
 
   const proyecto = typeof item?.proyecto === "string" && item.proyecto.trim()
     ? item.proyecto.trim()
-    : (typeof jsonProyecto?.nombre === "string" ? jsonProyecto.nombre.trim() : "");
+    : (typeof readKeyInsensitive(jsonProyecto, "nombre") === "string" ? readKeyInsensitive(jsonProyecto, "nombre").trim() : "");
   const subfuncion = typeof item?.subfuncion === "string" && item.subfuncion.trim()
     ? item.subfuncion.trim()
     : "Sin subfunción";
 
   const projectTemplates = extractTemplatesFromJsonPayload(jsonPayload);
-  const rawPlantillas = item?.plantillas ?? item?.plantilla ?? jsonPayload?.plantillas ?? jsonPayload?.plantilla;
+  const rawPlantillas = item?.plantillas
+    ?? item?.plantilla
+    ?? readKeyInsensitive(jsonProyecto, "plantillas")
+    ?? readKeyInsensitive(jsonProyecto, "plantilla")
+    ?? readKeyInsensitive(jsonPayload, "plantillas")
+    ?? readKeyInsensitive(jsonPayload, "plantilla");
   const fallbackTemplates = splitPlantillas(rawPlantillas)
     .map((name) => ({ nombre: name, markdown: "" }));
   const plantillas = mergeTemplatesPreferMarkdown([...projectTemplates, ...fallbackTemplates]);
