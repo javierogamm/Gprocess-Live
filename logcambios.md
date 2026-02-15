@@ -1,5 +1,10 @@
 # Historial de cambios
 
+## v1.1.59
+- Corregida la carga de plantillas desde APP CODE para contemplar también la columna `JSON` (en mayúsculas) además de `json`, permitiendo leer correctamente `proyecto.plantillas` con `{ nombre, markdown }`.
+- Con esta consolidación, la importación vuelve a crear nodos con el contenido real de `markdown` cuando el payload llega en la variante de columna `JSON` (caso detectado en proyectos como Urbanismo).
+- Consolidación de versión de la app en `1.1.59`.
+
 ## v1.1.58
 - Corregida la normalización de `Code_Markdowns` para extraer plantillas con markdown desde variantes adicionales de la columna `json`, incluyendo estructuras con plantilla en raíz (`{ nombre, markdown }`) además de `proyecto.plantillas`.
 - Ajustada la consolidación de plantillas importadas para mantener una única plantilla por nombre y priorizar la versión que sí contiene markdown, evitando que se creen nodos duplicados con plantilla vacía.
