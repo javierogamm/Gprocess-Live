@@ -1,16 +1,5 @@
 # Historial de cambios
 
-## v1.1.62
-- Corregida la persistencia de `plantillaTexto` al importar desde APP CODE: `Engine.updateNode` ahora guarda explícitamente el campo para que el contenido aparezca en el modal de plantilla del nodo.
-- Con este ajuste, el markdown que ya se ve en el log previo de carga se traslada correctamente al nodo importado y se muestra en el textarea del modal "Plantilla".
-- Consolidación de versión de la app en `1.1.62`.
-
-## v1.1.61
-- Añadido un log visible previo a la carga desde APP CODE en el modal, mostrando: nombre de proyecto, lista de plantillas, contenido markdown (preview) y estado del markdown por plantilla.
-- Extendida la normalización de `api/code-markdowns` para devolver trazas por plantilla (`trazasPlantillas`) indicando origen y causa cuando el markdown viene vacío (JSON sin markdown, solo texto plano en `plantillas`, o sin correlación localizada en JSON).
-- Mantenida la lectura de la columna `json/JSON` interpretando correctamente payloads serializados y claves con variaciones de capitalización para recuperar `proyecto.plantillas`.
-- Consolidación de versión de la app en `1.1.61`.
-
 ## v1.1.60
 - Corregida la importación de plantillas desde APP Gestiona Code para vincular por nombre normalizado (sin diferencias de mayúsculas, tildes o espacios), priorizando siempre la versión que sí incluye `markdown`.
 - Mejorada la lectura de la columna `json/JSON` para soportar claves en distintas variantes de capitalización y payloads doblemente serializados, asegurando la extracción de `proyecto.plantillas` y su contenido.
