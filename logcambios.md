@@ -1,5 +1,10 @@
 # Historial de cambios
 
+## v1.1.54
+- Ajustado el icono 📝 de plantilla en el canvas para que solo se muestre cuando el nodo de tipo **Formulario** o **Documento** está seleccionado individualmente.
+- Ampliado el modal de plantilla (`templateNodeModal`) para trabajar con mayor ancho/alto visible y facilitar la edición de textos largos.
+- Consolidación de ajustes de usabilidad del editor de plantillas con versionado de la APP.
+
 ## v1.1.53
 - Añadido un icono flotante 📝 en nodos de tipo **Formulario** y **Documento**, posicionado a la derecha y por encima del contenido del nodo para abrir la edición de plantilla en un modal.
 - Incorporado un modal de plantilla con edición de texto libre y guardado en el propio nodo (`plantillaTexto`) para conservar el contenido al exportar/importar el flujo.

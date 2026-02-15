@@ -169,7 +169,7 @@ input {
 
 .template-modal-textarea {
     width: 100%;
-    min-height: 320px;
+    min-height: 520px;
     margin-top: 12px;
     box-sizing: border-box;
     padding: 10px;
@@ -178,6 +178,13 @@ input {
     resize: vertical;
     font-family: inherit;
 }
+
+#templateNodeModal .modal-content {
+    width: min(1200px, 95vw);
+    max-width: 1200px;
+    max-height: 92vh;
+}
+
 
 
 /* ============================================
@@ -277,11 +284,19 @@ input {
     color: #ffffff;
     cursor: pointer;
     z-index: 80;
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     font-size: 14px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.node.selected .node-template-trigger {
+    display: flex;
+}
+
+.node.selected-multi .node-template-trigger {
+    display: none;
 }
 
 .node-template-trigger:hover {
