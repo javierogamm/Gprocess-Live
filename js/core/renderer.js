@@ -133,6 +133,24 @@ desc.addEventListener("input", () => {
     Engine.updateConnections();
 });
 
+if (nodo.tipo === "formulario" || nodo.tipo === "documento") {
+    const templateBtn = document.createElement("button");
+    templateBtn.className = "node-template-trigger";
+    templateBtn.type = "button";
+    templateBtn.title = "Editar plantilla";
+    templateBtn.textContent = "📝";
+    templateBtn.addEventListener("mousedown", (e) => {
+        e.stopPropagation();
+    });
+    templateBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (window.UI && typeof UI.openNodeTemplateModal === "function") {
+            UI.openNodeTemplateModal(nodo.id);
+        }
+    });
+    div.appendChild(templateBtn);
+}
+
 /* ============================================================
    LIMPIAR SOLO DESTACADOS DE CONEXIÓN Y NODOS
 ============================================================ */

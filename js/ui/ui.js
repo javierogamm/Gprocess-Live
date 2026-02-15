@@ -21,6 +21,7 @@ const UI = {
 
     currentNodeId: null,
     currentConnId: null,
+    templateNodeId: null,
     inputAsignadoUsuario: null, // **NUEVO** segundo campo (usuario)
     bulkAsignLabelGrupos: null,
     bulkAsignInputGrupos: null,
@@ -40,6 +41,34 @@ const UI = {
         this.inputDescripcion = document.getElementById("propDescripcion");
         this.inputTareaManual = document.getElementById("propTareaManual");
         this.inputAsignadoA = document.getElementById("propAsignadoA");
+        this.btnPlantillaNodo = document.getElementById("btnPlantillaNodo");
+
+        if (this.btnPlantillaNodo) {
+            this.btnPlantillaNodo.addEventListener("click", () => {
+                if (!this.currentNodeId) return;
+                this.openNodeTemplateModal(this.currentNodeId);
+            });
+        }
+
+        this.templateModal = document.getElementById("templateNodeModal");
+        this.templateModalTitle = document.getElementById("templateModalTitle");
+        this.templateModalTextarea = document.getElementById("templateModalTextarea");
+
+        const templateModalClose = document.getElementById("templateModalClose");
+        if (templateModalClose) {
+            templateModalClose.addEventListener("click", () => this.closeNodeTemplateModal());
+        }
+
+        const templateModalSave = document.getElementById("templateModalSave");
+        if (templateModalSave) {
+            templateModalSave.addEventListener("click", () => this.saveNodeTemplateModal());
+        }
+
+        if (this.templateModal) {
+            this.templateModal.addEventListener("click", (e) => {
+                if (e.target === this.templateModal) this.closeNodeTemplateModal();
+            });
+        }
 
                     /* ========================================================
             AUTOCOMPLETAR PARA GRUPOS Y USUARIOS
@@ -1867,6 +1896,7 @@ showNodeProperties(id) {
 
     const tipoSelect = document.getElementById("propTipo");
     if (tipoSelect) tipoSelect.value = nodo.tipo || "formulario";
+    this.refreshTemplateNodeButton(nodo);
 
     this.inputTitulo.value = nodo.titulo || "";
 
@@ -1955,6 +1985,7 @@ showGroupProperties() {
     this.propsEmpty.style.display = "none";
     this.propsEditor.style.display = "block";
     if (this.propsConn) this.propsConn.style.display = "none";
+    this.refreshTemplateNodeButton(null);
 
     // 🧹 Ocultar todo lo que no sea lo que queremos mostrar
     const allChildren = Array.from(this.propsEditor.children);
@@ -2179,6 +2210,8 @@ showConnectionProperties(connId) {
     this.propsEditor.style.display = "none";
     this.propsConn.style.display = "block";
 
+    this.refreshTemplateNodeButton(null);
+
     // Rellenar los campos existentes
     this.inputCondNombre.value = conn.condicionNombre || "";
     this.inputCondValor.value  = conn.condicionValor  || "";
@@ -2210,6 +2243,58 @@ showConnectionProperties(connId) {
     this.propsConn.insertBefore(lblCambio, this.propsConn.querySelector("#btnDeleteConnection"));
     this.propsConn.insertBefore(inputCambio, this.propsConn.querySelector("#btnDeleteConnection"));
 },
+
+isTemplateCompatibleNode(nodo) {
+    if (!nodo) return false;
+    return nodo.tipo === "formulario" || nodo.tipo === "documento";
+},
+
+refreshTemplateNodeButton(nodo) {
+    if (!this.btnPlantillaNodo) return;
+    if (this.isTemplateCompatibleNode(nodo)) {
+        this.btnPlantillaNodo.classList.remove("hidden");
+    } else {
+        this.btnPlantillaNodo.classList.add("hidden");
+    }
+},
+
+openNodeTemplateModal(nodeId) {
+    const nodo = Engine.getNode(nodeId);
+    if (!nodo || !this.isTemplateCompatibleNode(nodo) || !this.templateModal) return;
+
+    this.templateNodeId = nodo.id;
+    if (this.templateModalTitle) {
+        this.templateModalTitle.textContent = `Plantilla: ${nodo.titulo || nodo.tipo}`;
+    }
+    if (this.templateModalTextarea) {
+        this.templateModalTextarea.value = nodo.plantillaTexto || "";
+        this.templateModalTextarea.focus();
+    }
+    this.templateModal.classList.remove("hidden");
+},
+
+saveNodeTemplateModal() {
+    if (!this.templateNodeId || !this.templateModalTextarea) return;
+
+    const nodo = Engine.getNode(this.templateNodeId);
+    if (!nodo) {
+        this.closeNodeTemplateModal();
+        return;
+    }
+
+    const plantillaTexto = this.templateModalTextarea.value || "";
+    nodo.plantillaTexto = plantillaTexto;
+    Engine.updateNode(nodo.id, { plantillaTexto });
+    Engine.saveHistory();
+    this.closeNodeTemplateModal();
+},
+
+closeNodeTemplateModal() {
+    if (this.templateModal) {
+        this.templateModal.classList.add("hidden");
+    }
+    this.templateNodeId = null;
+},
     /* ========================================================
        LIMPIAR UI
     ======================================================== */
@@ -2220,6 +2305,7 @@ showConnectionProperties(connId) {
 
         this.propsEmpty.style.display = "block";
         this.propsEditor.style.display = "none";
+        this.refreshTemplateNodeButton(null);
         this.propsConn.style.display = "none";
         if (this.inputResize) this.inputResize.value = "100";
         this.hideBulkAsignaciones();
@@ -2272,6 +2358,7 @@ if (tipoSelect) {
 
             // Mantener el panel de grupo
             UI.showGroupProperties();
+            UI.refreshTemplateNodeButton(null);
             return;
         }
 
@@ -2282,6 +2369,7 @@ if (tipoSelect) {
         if (!nodo) return;
 
         nodo.tipo = newTipo;
+        UI.refreshTemplateNodeButton(nodo);
 
         // 🔁 Redibujar nodo con la nueva forma
         Renderer.deleteNodeVisual(nodo.id);
