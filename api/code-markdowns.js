@@ -165,6 +165,50 @@ const mergeTemplatesPreferMarkdown = (templates) => {
   return Array.from(merged.values());
 };
 
+const buildTemplateDiagnostics = ({ mergedTemplates, projectTemplates, fallbackTemplates }) => {
+  const projectByName = new Map();
+  const fallbackByName = new Map();
+
+  projectTemplates.forEach((template) => {
+    const key = normalizeNameKey(template.nombre) || template.nombre;
+    const entries = projectByName.get(key) || [];
+    entries.push(template);
+    projectByName.set(key, entries);
+  });
+
+  fallbackTemplates.forEach((template) => {
+    const key = normalizeNameKey(template.nombre) || template.nombre;
+    const entries = fallbackByName.get(key) || [];
+    entries.push(template);
+    fallbackByName.set(key, entries);
+  });
+
+  return mergedTemplates.map((template) => {
+    const key = normalizeNameKey(template.nombre) || template.nombre;
+    const fromJson = projectByName.get(key) || [];
+    const fromPlain = fallbackByName.get(key) || [];
+
+    let causaMarkdown = "markdown cargado correctamente desde JSON";
+
+    if (!template.markdown) {
+      if (fromJson.length > 0) {
+        causaMarkdown = "plantilla localizada en JSON pero sin campo markdown (o vacío)";
+      } else if (fromPlain.length > 0) {
+        causaMarkdown = "plantilla encontrada solo en columna plantillas/plantilla (texto plano), no existe markdown en JSON";
+      } else {
+        causaMarkdown = "no se encontró plantilla correlacionada en JSON para recuperar markdown";
+      }
+    }
+
+    return {
+      nombre: template.nombre,
+      markdown: template.markdown,
+      causaMarkdown,
+      origen: fromJson.length > 0 ? "json" : (fromPlain.length > 0 ? "texto_plano" : "desconocido"),
+    };
+  });
+};
+
 const normalizeItem = (item) => {
   const jsonPayload = parseJsonPayload(item?.json ?? item?.JSON ?? item?.Json);
   const jsonProyectoRaw = readKeyInsensitive(jsonPayload, "proyecto");
@@ -187,6 +231,11 @@ const normalizeItem = (item) => {
   const fallbackTemplates = splitPlantillas(rawPlantillas)
     .map((name) => ({ nombre: name, markdown: "" }));
   const plantillas = mergeTemplatesPreferMarkdown([...projectTemplates, ...fallbackTemplates]);
+  const trazasPlantillas = buildTemplateDiagnostics({
+    mergedTemplates: plantillas,
+    projectTemplates,
+    fallbackTemplates,
+  });
 
   return {
     id: item?.id,
@@ -194,6 +243,7 @@ const normalizeItem = (item) => {
     proyecto,
     subfuncion,
     plantillas,
+    trazasPlantillas,
   };
 };
 

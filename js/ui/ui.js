@@ -807,6 +807,7 @@ const codeAppClose = document.getElementById("codeAppClose");
 const codeAppFolders = document.getElementById("codeAppFolders");
 const codeAppList = document.getElementById("codeAppList");
 const codeAppLoadAction = document.getElementById("codeAppLoadAction");
+const codeAppLoadLog = document.getElementById("codeAppLoadLog");
 
 let flowDbItems = [];
 let flowDbMode = "load";
@@ -1280,6 +1281,54 @@ const closeCodeAppModal = () => {
     if (codeAppModal) codeAppModal.classList.add("hidden");
 };
 
+const renderCodeAppLoadLog = () => {
+    if (!codeAppLoadLog) return;
+
+    const selected = getSelectedCodeAppItem();
+    if (!selected) {
+        codeAppLoadLog.textContent = "Selecciona un proyecto para ver el log previo de carga desde APP CODE.";
+        return;
+    }
+
+    const templates = getUniqueCodeAppTemplates(selected.plantillas);
+    const templateTraces = Array.isArray(selected.trazasPlantillas) ? selected.trazasPlantillas : [];
+
+    const traceByName = new Map();
+    templateTraces.forEach((trace) => {
+        const key = normalizeTemplateNameKey(trace?.nombre || "");
+        if (!key) return;
+        traceByName.set(key, trace);
+    });
+
+    const lines = [
+        "[LOG PREVIO CARGA APP CODE]",
+        `Proyecto: ${selected.proyecto || "(sin nombre)"}`,
+        `Plantillas detectadas: ${templates.length}`,
+        "",
+    ];
+
+    if (!templates.length) {
+        lines.push("No se encontraron plantillas para este proyecto.");
+    }
+
+    templates.forEach((template, index) => {
+        const key = normalizeTemplateNameKey(template.nombre);
+        const trace = traceByName.get(key);
+        const markdown = extractTemplateMarkdown(template);
+        const markdownPreview = markdown
+            ? markdown.slice(0, 400)
+            : "(vacío)";
+
+        lines.push(`${index + 1}. Plantilla: ${template.nombre || "(sin nombre)"}`);
+        lines.push(`   Markdown: ${markdownPreview}`);
+        lines.push(`   Estado markdown: ${trace?.causaMarkdown || (markdown ? "markdown cargado correctamente" : "no se pudo determinar la causa")}`);
+        lines.push(`   Origen: ${trace?.origen || "desconocido"}`);
+        lines.push("");
+    });
+
+    codeAppLoadLog.textContent = lines.join("\n");
+};
+
 const getSelectedCodeAppItem = () =>
     codeAppItems.find((item) => String(item.id) === String(codeAppSelectedId)) || null;
 
@@ -1300,6 +1349,7 @@ const renderCodeAppFolders = () => {
             codeAppActiveSubfuncion = subfuncion;
             renderCodeAppFolders();
             renderCodeAppList();
+            renderCodeAppLoadLog();
         });
         codeAppFolders.appendChild(button);
     });
@@ -1337,6 +1387,7 @@ const renderCodeAppList = () => {
         row.addEventListener("click", () => {
             codeAppSelectedId = item.id;
             renderCodeAppList();
+            renderCodeAppLoadLog();
         });
         codeAppList.appendChild(row);
     });
@@ -1359,6 +1410,7 @@ const openCodeAppModal = async () => {
         codeAppSelectedId = null;
         renderCodeAppFolders();
         renderCodeAppList();
+        renderCodeAppLoadLog();
         codeAppModal.classList.remove("hidden");
     } catch (error) {
         console.error("Error cargando APP CODE:", error);
