@@ -1,5 +1,9 @@
 # Historial de cambios
 
+## v1.1.61
+- Corregida la sincronización de posición de botones flotantes para incluir también el botón **Minimap** al contraer o expandir paneles laterales, manteniendo la alineación derecha con Asignaciones, Cambios de estado y Tesauro.
+- Consolidación de versión de la app en `1.1.61`.
+
 ## v1.1.60
 - Corregida la importación de plantillas desde APP Gestiona Code para vincular por nombre normalizado (sin diferencias de mayúsculas, tildes o espacios), priorizando siempre la versión que sí incluye `markdown`.
 - Mejorada la lectura de la columna `json/JSON` para soportar claves en distintas variantes de capitalización y payloads doblemente serializados, asegurando la extracción de `proyecto.plantillas` y su contenido.
