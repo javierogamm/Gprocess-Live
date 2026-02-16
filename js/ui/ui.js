@@ -2528,7 +2528,8 @@ function syncFloatingButtons() {
     const buttons = [
       document.querySelector(".floating-assign-btn"),
       document.querySelector(".floating-cambios-btn"),
-      document.querySelector(".floating-tesauro-btn")
+      document.querySelector(".floating-tesauro-btn"),
+      document.querySelector(".floating-minimap-btn")
     ];
   
     // 🔍 Detectar si hay algún panel visible
