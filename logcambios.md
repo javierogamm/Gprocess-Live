@@ -1,5 +1,11 @@
 # Historial de cambios
 
+## v1.1.62
+- Añadida la funcionalidad **"Validar tesauros configurados"** en el panel lateral de Tesauro, ubicada bajo el botón de Gestor completo y con modal ancho de validación en 5 pasos.
+- Implementado el flujo guiado de validación: revisión de tesauros actuales, pegado de copypaste, matching por referencia, captura/validación de valores para selectores coincidentes y resumen previo a aplicar cambios.
+- Aplicada la actualización final de tesauros coincidentes para sincronizar nombre/tipo/momento/agrupación con el copypaste y actualizar valores de selector con los datos validados.
+- Consolidación de versión de la app en `1.1.62`.
+
 ## v1.1.61
 - Corregida la sincronización de posición de botones flotantes para incluir también el botón **Minimap** al contraer o expandir paneles laterales, manteniendo la alineación derecha con Asignaciones, Cambios de estado y Tesauro.
 - Consolidación de versión de la app en `1.1.61`.

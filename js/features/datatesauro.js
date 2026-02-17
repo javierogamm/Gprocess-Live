@@ -422,6 +422,16 @@ html += `
       🧩 Gestor Completo de Tesauros
     </button>
 
+    <button id="btnValidateTesauros" class="btn tesauro-accent-btn"
+            style="
+              width:100%;
+              margin-top:8px;
+              border-radius:6px;
+              font-weight:bold;
+            ">
+      ✅ Validar tesauros configurados
+    </button>
+
   </div>
 `;
 
@@ -491,6 +501,13 @@ if (btnTransform && inputTransform) {
     }
   });
 }
+
+  const btnValidate = this.listDiv.querySelector("#btnValidateTesauros");
+  if (btnValidate) {
+    btnValidate.addEventListener("click", () => {
+      this.openTesauroValidationModal();
+    });
+  }
 
 // 🆕 === IMPORTACIÓN TESAURO: botón + selector de archivos ===
 const btnImport = this.listDiv.querySelector("#btnImportTesauro");
@@ -1447,6 +1464,393 @@ applyPasteImport() {
   alert(`✅ Importación completada: ${created} creados, ${updated} actualizados.`);
 
   this.pasteImportState = null;
+},
+
+openTesauroValidationModal() {
+  if (!Array.isArray(this.campos) || this.campos.length === 0) {
+    alert("ℹ️ No hay tesauros en el proyecto para validar.");
+    return;
+  }
+
+  if (this.validationModal) {
+    this.validationModal.style.display = "flex";
+    this.renderTesauroValidationStep();
+    return;
+  }
+
+  const modal = document.createElement("div");
+  modal.id = "tesauroValidationModal";
+  modal.style.position = "fixed";
+  modal.style.inset = "0";
+  modal.style.background = "rgba(0,0,0,0.55)";
+  modal.style.display = "flex";
+  modal.style.alignItems = "center";
+  modal.style.justifyContent = "center";
+  modal.style.zIndex = "1000001";
+
+  modal.innerHTML = `
+    <div style="
+      background:white;
+      width:94%;
+      max-width:1400px;
+      min-height:78vh;
+      max-height:92vh;
+      border-radius:12px;
+      display:flex;
+      flex-direction:column;
+      padding:20px;
+      gap:12px;
+      box-shadow:0 10px 30px rgba(0,0,0,0.35);
+      overflow:hidden;
+    ">
+      <h2 style="margin:0; text-align:center;">✅ Validar tesauros configurados</h2>
+      <div id="tvStepInfo" style="font-size:14px; color:#475569;"></div>
+      <div id="tvBody" style="flex:1; overflow:auto; border:1px solid #e2e8f0; border-radius:10px; padding:12px;"></div>
+      <div style="display:flex; gap:10px; justify-content:flex-end;">
+        <button id="tvCancel" style="padding:10px 16px; border-radius:8px; font-weight:bold;">Cerrar</button>
+        <button id="tvPrev" style="padding:10px 16px; border-radius:8px; font-weight:bold;">⬅ Anterior</button>
+        <button id="tvNext" style="padding:10px 16px; border-radius:8px; font-weight:bold;">Siguiente ➡</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  this.validationModal = modal;
+
+  modal.querySelector("#tvCancel").addEventListener("click", () => {
+    this.validationModal.style.display = "none";
+    this.validationState = null;
+  });
+
+  modal.querySelector("#tvPrev").addEventListener("click", () => {
+    if (!this.validationState) return;
+    if (this.validationState.step > 1) {
+      this.validationState.step -= 1;
+      this.renderTesauroValidationStep();
+    }
+  });
+
+  modal.querySelector("#tvNext").addEventListener("click", () => {
+    this.handleTesauroValidationNext();
+  });
+
+  this.validationState = {
+    step: 1,
+    parsedPaste: [],
+    matches: [],
+    selectorsQueue: [],
+    selectorInputs: {},
+    selectorValues: {},
+    summary: null
+  };
+
+  this.renderTesauroValidationStep();
+},
+
+renderTesauroValidationStep() {
+  if (!this.validationModal || !this.validationState) return;
+
+  const state = this.validationState;
+  const stepInfo = this.validationModal.querySelector("#tvStepInfo");
+  const body = this.validationModal.querySelector("#tvBody");
+  const prev = this.validationModal.querySelector("#tvPrev");
+  const next = this.validationModal.querySelector("#tvNext");
+
+  prev.style.visibility = state.step === 1 ? "hidden" : "visible";
+
+  if (state.step === 1) {
+    stepInfo.textContent = "Paso 1: revisión de los tesauros actuales del proyecto.";
+    next.textContent = "Siguiente ➡";
+    body.innerHTML = this.buildTesaurosTableHtml(this.campos);
+    return;
+  }
+
+  if (state.step === 2) {
+    stepInfo.textContent = "Paso 2: pega el copypaste de tesauros (mismo formato que Importar Tesauros).";
+    next.textContent = "Analizar copypaste ➡";
+    body.innerHTML = `
+      <textarea id="tvPasteInput" style="width:100%; min-height:320px; resize:vertical; padding:10px; border:1px solid #cbd5e1; border-radius:8px;"></textarea>
+      <p style="margin-top:8px; color:#64748b; font-size:13px;">Se aceptan ambos formatos de copypaste soportados por la importación.</p>
+    `;
+    return;
+  }
+
+  if (state.step === 3) {
+    stepInfo.textContent = "Paso 3: matching entre tesauros del proyecto y tesauros del copypaste.";
+    next.textContent = state.selectorsQueue.length ? "Continuar con selectores ➡" : "Ver resumen ➡";
+    body.innerHTML = this.buildValidationMatchesHtml(state.matches);
+    return;
+  }
+
+  if (state.step === 4) {
+    const currentSelector = state.selectorsQueue[0];
+    stepInfo.textContent = "Paso 4: pega los valores de cada selector coincidente para validarlos.";
+
+    if (!currentSelector) {
+      next.textContent = "Ver resumen ➡";
+      body.innerHTML = "<p style='color:#475569;'>No quedan selectores pendientes.</p>";
+      return;
+    }
+
+    next.textContent = "Validar selector y continuar ➡";
+    const existing = state.selectorInputs[currentSelector.pasteRef] || "";
+    body.innerHTML = `
+      <h3 style="margin:0 0 8px 0;">${this.escapeAttr(currentSelector.project.nombre)} (${this.escapeAttr(currentSelector.project.ref)})</h3>
+      <p style="margin:0 0 8px 0; color:#475569;">Pega los valores del selector con formato Referencia/Valor.</p>
+      <textarea id="tvSelectorInput" style="width:100%; min-height:280px; resize:vertical; padding:10px; border:1px solid #cbd5e1; border-radius:8px;">${this.escapeAttr(existing)}</textarea>
+    `;
+    return;
+  }
+
+  if (state.step === 5) {
+    stepInfo.textContent = "Paso 5: resumen de coincidencias y actualización final.";
+    next.textContent = "✅ Aplicar actualización";
+
+    if (!state.summary) {
+      state.summary = this.buildValidationSummary();
+    }
+
+    body.innerHTML = this.buildValidationSummaryHtml(state.summary);
+  }
+},
+
+handleTesauroValidationNext() {
+  const state = this.validationState;
+  if (!state) return;
+
+  if (state.step === 1) {
+    state.step = 2;
+    this.renderTesauroValidationStep();
+    return;
+  }
+
+  if (state.step === 2) {
+    const text = this.validationModal.querySelector("#tvPasteInput")?.value || "";
+    const parsed = this.parsePasteTesauros(text);
+    if (!parsed.length) {
+      alert("❌ No se detectaron tesauros válidos en el copypaste.");
+      return;
+    }
+
+    state.parsedPaste = parsed;
+    state.matches = this.matchProjectTesaurosWithPaste(parsed);
+
+    if (!state.matches.length) {
+      alert("⚠️ No se encontraron tesauros coincidentes entre proyecto y copypaste.");
+      return;
+    }
+
+    state.selectorsQueue = state.matches
+      .filter(m => m.project.tipo === "selector" && m.paste.tipo === "selector")
+      .map(m => ({
+        pasteRef: m.paste.ref,
+        project: m.project,
+        paste: m.paste
+      }));
+
+    state.step = 3;
+    this.renderTesauroValidationStep();
+    return;
+  }
+
+  if (state.step === 3) {
+    state.step = state.selectorsQueue.length ? 4 : 5;
+    this.renderTesauroValidationStep();
+    return;
+  }
+
+  if (state.step === 4) {
+    const currentSelector = state.selectorsQueue[0];
+    if (currentSelector) {
+      const raw = this.validationModal.querySelector("#tvSelectorInput")?.value || "";
+      state.selectorInputs[currentSelector.pasteRef] = raw;
+      const refs = this.parseSelectorRefs(raw);
+      if (!refs.length) {
+        alert("❌ No se detectaron valores para este selector. Revisa el pegado.");
+        return;
+      }
+
+      const invalid = refs.some(item => !item.ref || !item.valor);
+      if (invalid) {
+        alert("❌ Todas las filas del selector deben tener referencia y valor.");
+        return;
+      }
+
+      state.selectorValues[currentSelector.pasteRef] = refs.map(item => ({
+        id: this.generateId(),
+        ref: item.ref,
+        valor: item.valor
+      }));
+      state.selectorsQueue.shift();
+    }
+
+    if (state.selectorsQueue.length) {
+      this.renderTesauroValidationStep();
+      return;
+    }
+
+    state.step = 5;
+    state.summary = this.buildValidationSummary();
+    this.renderTesauroValidationStep();
+    return;
+  }
+
+  if (state.step === 5) {
+    const summary = state.summary || this.buildValidationSummary();
+    this.applyTesauroValidationUpdates(summary);
+    this.sync();
+    this.render();
+    alert(`✅ Validación aplicada. Coincidencias actualizadas: ${summary.updatedTesauros}. Selectores actualizados: ${summary.updatedSelectors}.`);
+    this.validationModal.style.display = "none";
+    this.validationState = null;
+  }
+},
+
+matchProjectTesaurosWithPaste(parsedPaste) {
+  const byRef = new Map(parsedPaste.map(item => [item.ref.toLowerCase(), item]));
+  const matches = [];
+
+  (this.campos || []).forEach(projectField => {
+    const candidate = byRef.get((projectField.ref || "").toLowerCase());
+    if (!candidate) return;
+    matches.push({ project: projectField, paste: candidate });
+  });
+
+  return matches;
+},
+
+buildTesaurosTableHtml(fields) {
+  return `
+    <table style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr style="background:#e2e8f0;">
+          <th style="padding:8px; border:1px solid #cbd5e1;">Referencia</th>
+          <th style="padding:8px; border:1px solid #cbd5e1;">Nombre</th>
+          <th style="padding:8px; border:1px solid #cbd5e1;">Tipo</th>
+          <th style="padding:8px; border:1px solid #cbd5e1;">Momento</th>
+          <th style="padding:8px; border:1px solid #cbd5e1;">Agrupación</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${fields.map(item => `
+          <tr>
+            <td style="padding:8px; border:1px solid #cbd5e1;">${this.escapeAttr(item.ref || "")}</td>
+            <td style="padding:8px; border:1px solid #cbd5e1;">${this.escapeAttr(item.nombre || "")}</td>
+            <td style="padding:8px; border:1px solid #cbd5e1;">${this.escapeAttr(item.tipo || "")}</td>
+            <td style="padding:8px; border:1px solid #cbd5e1;">${this.escapeAttr(item.momento || "")}</td>
+            <td style="padding:8px; border:1px solid #cbd5e1;">${this.escapeAttr(item.agrupacion || "")}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+},
+
+buildValidationMatchesHtml(matches) {
+  return `
+    <table style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr style="background:#e2e8f0;">
+          <th style="padding:8px; border:1px solid #cbd5e1;">Ref</th>
+          <th style="padding:8px; border:1px solid #cbd5e1;">Nombre proyecto</th>
+          <th style="padding:8px; border:1px solid #cbd5e1;">Nombre copypaste</th>
+          <th style="padding:8px; border:1px solid #cbd5e1;">Tipo proyecto</th>
+          <th style="padding:8px; border:1px solid #cbd5e1;">Tipo copypaste</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${matches.map(({ project, paste }) => `
+          <tr>
+            <td style="padding:8px; border:1px solid #cbd5e1;">${this.escapeAttr(project.ref || "")}</td>
+            <td style="padding:8px; border:1px solid #cbd5e1;">${this.escapeAttr(project.nombre || "")}</td>
+            <td style="padding:8px; border:1px solid #cbd5e1;">${this.escapeAttr(paste.nombre || "")}</td>
+            <td style="padding:8px; border:1px solid #cbd5e1;">${this.escapeAttr(project.tipo || "")}</td>
+            <td style="padding:8px; border:1px solid #cbd5e1;">${this.escapeAttr(paste.tipo || "")}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+},
+
+buildValidationSummary() {
+  const state = this.validationState;
+  const summary = {
+    updatedTesauros: 0,
+    updatedSelectors: 0,
+    rows: []
+  };
+
+  (state.matches || []).forEach(({ project, paste }) => {
+    const selectorValues = state.selectorValues[paste.ref] || null;
+    const selectorChanged = Array.isArray(selectorValues);
+    summary.rows.push({
+      ref: project.ref,
+      oldName: project.nombre,
+      newName: paste.nombre,
+      oldType: project.tipo,
+      newType: paste.tipo,
+      selectorCount: selectorChanged ? selectorValues.length : (Array.isArray(project.opciones) ? project.opciones.length : 0),
+      selectorChanged
+    });
+    summary.updatedTesauros += 1;
+    if (selectorChanged) summary.updatedSelectors += 1;
+  });
+
+  return summary;
+},
+
+buildValidationSummaryHtml(summary) {
+  return `
+    <p style="margin:0 0 10px 0; color:#475569;">
+      Se actualizarán <strong>${summary.updatedTesauros}</strong> tesauros coincidentes.
+      Selectores con valores validados: <strong>${summary.updatedSelectors}</strong>.
+    </p>
+    <table style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr style="background:#e2e8f0;">
+          <th style="padding:8px; border:1px solid #cbd5e1;">Ref</th>
+          <th style="padding:8px; border:1px solid #cbd5e1;">Nombre actual</th>
+          <th style="padding:8px; border:1px solid #cbd5e1;">Nombre nuevo</th>
+          <th style="padding:8px; border:1px solid #cbd5e1;">Tipo</th>
+          <th style="padding:8px; border:1px solid #cbd5e1;">Valores selector</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${summary.rows.map(row => `
+          <tr>
+            <td style="padding:8px; border:1px solid #cbd5e1;">${this.escapeAttr(row.ref || "")}</td>
+            <td style="padding:8px; border:1px solid #cbd5e1;">${this.escapeAttr(row.oldName || "")}</td>
+            <td style="padding:8px; border:1px solid #cbd5e1;">${this.escapeAttr(row.newName || "")}</td>
+            <td style="padding:8px; border:1px solid #cbd5e1;">${this.escapeAttr(row.oldType || "")} → ${this.escapeAttr(row.newType || "")}</td>
+            <td style="padding:8px; border:1px solid #cbd5e1;">${row.selectorCount}${row.selectorChanged ? " (actualizado)" : ""}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+},
+
+applyTesauroValidationUpdates(summary) {
+  const state = this.validationState;
+  if (!state) return;
+
+  (state.matches || []).forEach(({ project, paste }) => {
+    project.nombre = paste.nombre;
+    project.tipo = paste.tipo;
+    if (paste.momento) project.momento = paste.momento;
+    if (paste.agrupacion) project.agrupacion = paste.agrupacion;
+
+    const selectorValues = state.selectorValues[paste.ref];
+    if (Array.isArray(selectorValues)) {
+      project.opciones = selectorValues.map(item => ({
+        id: this.generateId(),
+        ref: item.ref,
+        valor: item.valor
+      }));
+      delete project._needsOptions;
+    }
+  });
 },
 
 // 🧩 === IMPORTADOR REAL DE TESAURO (basado en CSV exportado) ===
