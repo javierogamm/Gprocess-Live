@@ -28,7 +28,8 @@
 #panelTesauro button,
 #panelTesauro .btn,
 #tesauroManagerModal button,
-#tmRefModal button {
+#tmRefModal button,
+#tesauroValidationModal button {
   background: #E34850;
   color: #fff;
   border: 1px solid #c63c45;
@@ -41,7 +42,8 @@
 #panelTesauro button:hover,
 #panelTesauro .btn:hover,
 #tesauroManagerModal button:hover,
-#tmRefModal button:hover {
+#tmRefModal button:hover,
+#tesauroValidationModal button:hover {
   background: #c63c45;
   transform: translateY(-1px);
 }
@@ -49,7 +51,8 @@
 #panelTesauro button:disabled,
 #panelTesauro .btn:disabled,
 #tesauroManagerModal button:disabled,
-#tmRefModal button:disabled {
+#tmRefModal button:disabled,
+#tesauroValidationModal button:disabled {
   opacity: 0.75;
   cursor: not-allowed;
   transform: none;

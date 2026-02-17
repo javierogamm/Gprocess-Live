@@ -1396,7 +1396,8 @@ input {
 #tesauroManagerModal button,
 #tmRefModal button,
 #tesauroPasteModal button,
-#tesauroSelectorModal button {
+#tesauroSelectorModal button,
+#tesauroValidationModal button {
   background: #E34850;
   color: white;
   border: none;
@@ -1405,7 +1406,8 @@ input {
 #tesauroManagerModal button:hover,
 #tmRefModal button:hover,
 #tesauroPasteModal button:hover,
-#tesauroSelectorModal button:hover {
+#tesauroSelectorModal button:hover,
+#tesauroValidationModal button:hover {
   background: #c63c45;
 }
 .tesauro-item {
