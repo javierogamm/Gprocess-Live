@@ -779,8 +779,7 @@ input {
     gap: 6px;
   }
 
-  .flow-db-field input,
-  .flow-db-field select {
+  .flow-db-field input {
     border: 1px solid #cbd5e1;
     border-radius: 8px;
     padding: 8px 10px;
@@ -839,11 +838,6 @@ input {
     justify-content: flex-end;
     gap: 10px;
     flex-wrap: wrap;
-  }
-
-
-  .link-codeapp-fields {
-    align-items: end;
   }
 
   .flow-db-log-box {

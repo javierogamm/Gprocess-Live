@@ -808,15 +808,6 @@ const codeAppFolders = document.getElementById("codeAppFolders");
 const codeAppList = document.getElementById("codeAppList");
 const codeAppLoadAction = document.getElementById("codeAppLoadAction");
 const codeAppLoadLog = document.getElementById("codeAppLoadLog");
-const btnLinkCodeAppProject = document.getElementById("btnLinkCodeAppProject");
-const linkCodeAppModal = document.getElementById("linkCodeAppModal");
-const linkCodeAppClose = document.getElementById("linkCodeAppClose");
-const linkCodeAppFolders = document.getElementById("linkCodeAppFolders");
-const linkCodeAppList = document.getElementById("linkCodeAppList");
-const linkCodeTemplateSelect = document.getElementById("linkCodeTemplateSelect");
-const linkCodeNodeSelect = document.getElementById("linkCodeNodeSelect");
-const linkCodeAppLog = document.getElementById("linkCodeAppLog");
-const linkCodeAppAction = document.getElementById("linkCodeAppAction");
 
 let flowDbItems = [];
 let flowDbMode = "load";
@@ -827,9 +818,6 @@ let codeAppItems = [];
 let codeAppSubfunciones = [];
 let codeAppActiveSubfuncion = "";
 let codeAppSelectedId = null;
-let linkCodeAppSubfunciones = [];
-let linkCodeAppActiveSubfuncion = "";
-let linkCodeAppSelectedId = null;
 
 const normalizeSubfuncion = (value) => {
     if (typeof value === "string" && value.trim()) {
@@ -1405,20 +1393,17 @@ const renderCodeAppList = () => {
     });
 };
 
-const loadCodeAppProjects = async () => {
-    const response = await fetch("/api/code-markdowns");
-    const data = await response.json();
-    if (!response.ok) {
-        throw new Error(data?.error || "No se pudieron cargar los proyectos de APP CODE.");
-    }
-    return Array.isArray(data?.data) ? data.data : [];
-};
-
 const openCodeAppModal = async () => {
     if (!codeAppModal) return;
 
     try {
-        codeAppItems = await loadCodeAppProjects();
+        const response = await fetch("/api/code-markdowns");
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data?.error || "No se pudieron cargar los proyectos de APP CODE.");
+        }
+
+        codeAppItems = Array.isArray(data?.data) ? data.data : [];
         codeAppSubfunciones = [...new Set(codeAppItems.map((item) => normalizeSubfuncion(item.subfuncion)))];
         codeAppSubfunciones.sort((a, b) => a.localeCompare(b, "es"));
         codeAppActiveSubfuncion = codeAppSubfunciones[0] || "Sin subfunción";
@@ -1543,223 +1528,6 @@ const getUniqueCodeAppTemplates = (rawTemplates) => {
     return Array.from(mergedByName.values());
 };
 
-const getSelectedLinkCodeAppItem = () =>
-    codeAppItems.find((item) => String(item.id) === String(linkCodeAppSelectedId)) || null;
-
-const closeLinkCodeAppModal = () => {
-    if (linkCodeAppModal) linkCodeAppModal.classList.add("hidden");
-};
-
-const renderLinkCodeAppFolders = () => {
-    if (!linkCodeAppFolders) return;
-    linkCodeAppFolders.innerHTML = "";
-
-    linkCodeAppSubfunciones.forEach((subfuncion) => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "flow-db-folder";
-        if (subfuncion === linkCodeAppActiveSubfuncion) {
-            button.classList.add("flow-db-folder--active");
-        }
-        button.innerHTML = `<span>📁</span><span>${subfuncion}</span>`;
-        button.addEventListener("click", () => {
-            linkCodeAppSelectedId = null;
-            linkCodeAppActiveSubfuncion = subfuncion;
-            renderLinkCodeAppFolders();
-            renderLinkCodeAppList();
-            refreshLinkCodeSelections();
-        });
-        linkCodeAppFolders.appendChild(button);
-    });
-};
-
-const renderLinkCodeAppList = () => {
-    if (!linkCodeAppList) return;
-    linkCodeAppList.innerHTML = "";
-
-    const items = codeAppItems.filter(
-        (item) => normalizeSubfuncion(item.subfuncion) === linkCodeAppActiveSubfuncion
-    );
-
-    if (!items.length) {
-        const empty = document.createElement("p");
-        empty.textContent = "No hay proyectos disponibles en esta subfunción.";
-        empty.style.color = "#64748b";
-        linkCodeAppList.appendChild(empty);
-        return;
-    }
-
-    items.forEach((item) => {
-        const row = document.createElement("button");
-        row.type = "button";
-        row.className = "flow-db-item";
-        if (String(item.id) === String(linkCodeAppSelectedId)) {
-            row.classList.add("flow-db-item--active");
-        }
-
-        const plantillas = getUniqueCodeAppTemplates(item.plantillas);
-        row.innerHTML = `
-            <h4>${item.proyecto || "Proyecto sin nombre"}</h4>
-            <p>${plantillas.length} plantilla${plantillas.length === 1 ? "" : "s"}</p>
-        `;
-        row.addEventListener("click", () => {
-            linkCodeAppSelectedId = item.id;
-            renderLinkCodeAppList();
-            refreshLinkCodeSelections();
-        });
-        linkCodeAppList.appendChild(row);
-    });
-};
-
-const getEligibleTemplateNodes = () => {
-    const nodes = Array.isArray(Engine?.nodes) ? Engine.nodes : [];
-    return nodes.filter((node) => ["formulario", "documento"].includes(String(node?.tipo || "").toLowerCase()));
-};
-
-const refreshLinkCodeLog = () => {
-    if (!linkCodeAppLog) return;
-
-    const selectedProject = getSelectedLinkCodeAppItem();
-    const selectedTemplate = linkCodeTemplateSelect?.value || "";
-    const selectedNodeId = Number(linkCodeNodeSelect?.value || 0);
-    const selectedNode = getEligibleTemplateNodes().find((node) => node.id === selectedNodeId);
-
-    const lines = ["[RESUMEN VINCULACIÓN]"];
-    lines.push(`Proyecto APP CODE: ${selectedProject?.proyecto || "(sin seleccionar)"}`);
-    lines.push(`Plantilla: ${selectedTemplate || "(sin seleccionar)"}`);
-    lines.push(`Nodo destino: ${selectedNode ? `${selectedNode.titulo || `Nodo ${selectedNode.id}`} (${selectedNode.tipo})` : "(sin seleccionar)"}`);
-
-    if (selectedTemplate && selectedNode?.plantillaTexto) {
-        lines.push("");
-        lines.push("⚠️ El nodo ya tenía una plantilla configurada. Si vinculas, se sobrescribirá.");
-    }
-
-    linkCodeAppLog.textContent = lines.join("
-");
-};
-
-const refreshLinkCodeSelections = () => {
-    const selected = getSelectedLinkCodeAppItem();
-    const templates = selected ? getUniqueCodeAppTemplates(selected.plantillas) : [];
-    const nodes = getEligibleTemplateNodes();
-
-    if (linkCodeTemplateSelect) {
-        const previous = linkCodeTemplateSelect.value;
-        linkCodeTemplateSelect.innerHTML = "";
-
-        if (!templates.length) {
-            const opt = document.createElement("option");
-            opt.value = "";
-            opt.textContent = "Sin plantillas disponibles";
-            linkCodeTemplateSelect.appendChild(opt);
-        } else {
-            const initialOpt = document.createElement("option");
-            initialOpt.value = "";
-            initialOpt.textContent = "Selecciona plantilla";
-            linkCodeTemplateSelect.appendChild(initialOpt);
-
-            templates.forEach((template) => {
-                const label = extractTemplateLabel(template);
-                const opt = document.createElement("option");
-                opt.value = label;
-                opt.textContent = label;
-                linkCodeTemplateSelect.appendChild(opt);
-            });
-
-            if (templates.some((template) => extractTemplateLabel(template) === previous)) {
-                linkCodeTemplateSelect.value = previous;
-            }
-        }
-    }
-
-    if (linkCodeNodeSelect) {
-        const previous = linkCodeNodeSelect.value;
-        linkCodeNodeSelect.innerHTML = "";
-
-        if (!nodes.length) {
-            const opt = document.createElement("option");
-            opt.value = "";
-            opt.textContent = "No hay nodos de tipo formulario/documento";
-            linkCodeNodeSelect.appendChild(opt);
-        } else {
-            const initialOpt = document.createElement("option");
-            initialOpt.value = "";
-            initialOpt.textContent = "Selecciona nodo";
-            linkCodeNodeSelect.appendChild(initialOpt);
-
-            nodes.forEach((node) => {
-                const opt = document.createElement("option");
-                opt.value = String(node.id);
-                opt.textContent = `${node.titulo || `Nodo ${node.id}`} (${node.tipo})`;
-                linkCodeNodeSelect.appendChild(opt);
-            });
-
-            if (nodes.some((node) => String(node.id) === previous)) {
-                linkCodeNodeSelect.value = previous;
-            }
-        }
-    }
-
-    refreshLinkCodeLog();
-};
-
-const openLinkCodeAppModal = async () => {
-    if (!linkCodeAppModal) return;
-
-    try {
-        codeAppItems = await loadCodeAppProjects();
-        linkCodeAppSubfunciones = [...new Set(codeAppItems.map((item) => normalizeSubfuncion(item.subfuncion)))];
-        linkCodeAppSubfunciones.sort((a, b) => a.localeCompare(b, "es"));
-        linkCodeAppActiveSubfuncion = linkCodeAppSubfunciones[0] || "Sin subfunción";
-        linkCodeAppSelectedId = null;
-        renderLinkCodeAppFolders();
-        renderLinkCodeAppList();
-        refreshLinkCodeSelections();
-        linkCodeAppModal.classList.remove("hidden");
-    } catch (error) {
-        console.error("Error cargando APP CODE para vinculación:", error);
-        alert("❌ No se pudieron cargar los proyectos para vincular.");
-    }
-};
-
-const linkTemplateToNode = () => {
-    const selectedProject = getSelectedLinkCodeAppItem();
-    if (!selectedProject) {
-        alert("Selecciona un proyecto de APP CODE.");
-        return;
-    }
-
-    const templateName = linkCodeTemplateSelect?.value || "";
-    const nodeId = Number(linkCodeNodeSelect?.value || 0);
-    const node = getEligibleTemplateNodes().find((candidate) => candidate.id === nodeId);
-
-    if (!templateName) {
-        alert("Selecciona una plantilla markdown.");
-        return;
-    }
-
-    if (!node) {
-        alert("Selecciona un nodo de tipo Formulario o Documento.");
-        return;
-    }
-
-    const template = getUniqueCodeAppTemplates(selectedProject.plantillas)
-        .find((item) => extractTemplateLabel(item) === templateName);
-
-    if (!template) {
-        alert("No se encontró la plantilla seleccionada.");
-        return;
-    }
-
-    Engine.updateNode(node.id, {
-        plantillaTexto: extractTemplateMarkdown(template)
-    });
-    Engine.saveHistory();
-    refreshLinkCodeSelections();
-
-    alert(`✅ Plantilla "${templateName}" vinculada al nodo "${node.titulo || `Nodo ${node.id}`}".`);
-};
-
 const importProjectFromCodeApp = () => {
     const selected = getSelectedCodeAppItem();
     if (!selected) {
@@ -1826,34 +1594,6 @@ if (codeAppModal) {
 
 if (codeAppLoadAction) {
     codeAppLoadAction.addEventListener("click", importProjectFromCodeApp);
-}
-
-if (btnLinkCodeAppProject) {
-    btnLinkCodeAppProject.addEventListener("click", openLinkCodeAppModal);
-}
-
-if (linkCodeAppClose) {
-    linkCodeAppClose.addEventListener("click", closeLinkCodeAppModal);
-}
-
-if (linkCodeAppModal) {
-    linkCodeAppModal.addEventListener("click", (event) => {
-        if (event.target === linkCodeAppModal) {
-            closeLinkCodeAppModal();
-        }
-    });
-}
-
-if (linkCodeTemplateSelect) {
-    linkCodeTemplateSelect.addEventListener("change", refreshLinkCodeLog);
-}
-
-if (linkCodeNodeSelect) {
-    linkCodeNodeSelect.addEventListener("change", refreshLinkCodeLog);
-}
-
-if (linkCodeAppAction) {
-    linkCodeAppAction.addEventListener("click", linkTemplateToNode);
 }
    
    /* ========================================================
