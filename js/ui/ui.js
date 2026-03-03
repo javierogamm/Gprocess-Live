@@ -813,10 +813,16 @@ const linkCodeAppModal = document.getElementById("linkCodeAppModal");
 const linkCodeAppClose = document.getElementById("linkCodeAppClose");
 const linkCodeAppFolders = document.getElementById("linkCodeAppFolders");
 const linkCodeAppList = document.getElementById("linkCodeAppList");
-const linkCodeTemplateSelect = document.getElementById("linkCodeTemplateSelect");
-const linkCodeNodeSelect = document.getElementById("linkCodeNodeSelect");
 const linkCodeAppLog = document.getElementById("linkCodeAppLog");
 const linkCodeAppAction = document.getElementById("linkCodeAppAction");
+const linkCodeWizardModal = document.getElementById("linkCodeWizardModal");
+const linkCodeWizardClose = document.getElementById("linkCodeWizardClose");
+const linkCodeWizardSubtitle = document.getElementById("linkCodeWizardSubtitle");
+const linkCodeWizardStepTitle = document.getElementById("linkCodeWizardStepTitle");
+const linkCodeWizardNodeInfo = document.getElementById("linkCodeWizardNodeInfo");
+const linkCodeWizardTemplateSelect = document.getElementById("linkCodeWizardTemplateSelect");
+const linkCodeWizardSkip = document.getElementById("linkCodeWizardSkip");
+const linkCodeWizardApply = document.getElementById("linkCodeWizardApply");
 
 let flowDbItems = [];
 let flowDbMode = "load";
@@ -830,6 +836,10 @@ let codeAppSelectedId = null;
 let linkCodeAppSubfunciones = [];
 let linkCodeAppActiveSubfuncion = "";
 let linkCodeAppSelectedId = null;
+let linkCodeWizardNodes = [];
+let linkCodeWizardTemplates = [];
+let linkCodeWizardAssignments = [];
+let linkCodeWizardIndex = 0;
 
 const normalizeSubfuncion = (value) => {
     if (typeof value === "string" && value.trim()) {
@@ -1547,6 +1557,10 @@ const closeLinkCodeAppModal = () => {
     if (linkCodeAppModal) linkCodeAppModal.classList.add("hidden");
 };
 
+const closeLinkCodeWizardModal = () => {
+    if (linkCodeWizardModal) linkCodeWizardModal.classList.add("hidden");
+};
+
 const renderLinkCodeAppFolders = () => {
     if (!linkCodeAppFolders) return;
     linkCodeAppFolders.innerHTML = "";
@@ -1564,7 +1578,7 @@ const renderLinkCodeAppFolders = () => {
             linkCodeAppActiveSubfuncion = subfuncion;
             renderLinkCodeAppFolders();
             renderLinkCodeAppList();
-            refreshLinkCodeSelections();
+            refreshLinkCodeLog();
         });
         linkCodeAppFolders.appendChild(button);
     });
@@ -1602,7 +1616,7 @@ const renderLinkCodeAppList = () => {
         row.addEventListener("click", () => {
             linkCodeAppSelectedId = item.id;
             renderLinkCodeAppList();
-            refreshLinkCodeSelections();
+            refreshLinkCodeLog();
         });
         linkCodeAppList.appendChild(row);
     });
@@ -1613,90 +1627,237 @@ const getEligibleTemplateNodes = () => {
     return nodes.filter((node) => ["formulario", "documento"].includes(String(node?.tipo || "").toLowerCase()));
 };
 
+const collectTesauroRefsFromProject = (project) => {
+    const refs = [];
+    const addRef = (value) => {
+        if (typeof value !== "string") return;
+        const cleaned = value.trim().replace(/[^\p{L}\p{N}_.-]/gu, "");
+        if (cleaned.length >= 3) refs.push(cleaned);
+    };
+
+    const raw = project?.tesauros ?? project?.tesauro ?? [];
+    if (Array.isArray(raw)) {
+        raw.forEach((item) => {
+            if (typeof item === "string") {
+                addRef(item);
+                return;
+            }
+            addRef(item?.ref);
+            addRef(item?.referencia);
+        });
+    }
+
+    return Array.from(new Set(refs));
+};
+
+const extractTesauroRefsFromMarkdown = (markdown) => {
+    if (typeof markdown !== "string" || !markdown.trim()) return [];
+
+    const refs = new Set();
+    const patterns = [
+        /\{\{\s*([\p{L}_][\p{L}\p{N}_.-]{2,})\s*\}\}/gu,
+        /\[\[\s*([\p{L}_][\p{L}\p{N}_.-]{2,})\s*\]\]/gu,
+        /referencia(?:\s+tesauro)?\s*[:=]\s*([\p{L}_][\p{L}\p{N}_.-]{2,})/giu
+    ];
+
+    patterns.forEach((pattern) => {
+        for (const match of markdown.matchAll(pattern)) {
+            const candidate = (match?.[1] || "").trim().replace(/[^\p{L}\p{N}_.-]/gu, "");
+            if (candidate.length >= 3) refs.add(candidate);
+        }
+    });
+
+    return Array.from(refs);
+};
+
+const humanizeTesauroName = (ref) =>
+    String(ref || "")
+        .replace(/([a-zà-ÿ])([A-ZÀ-ß])/g, "$1 $2")
+        .replace(/[_.-]+/g, " ")
+        .trim() || "Nuevo Tesauro";
+
+const ensureTesaurosFromReferences = (refs) => {
+    if (!Array.isArray(refs) || !refs.length) return 0;
+
+    const normalizedRefs = Array.from(new Set(refs.filter(Boolean).map((ref) => String(ref).trim())));
+    const existing = Array.isArray(Engine?.tesauro) ? Engine.tesauro : [];
+    const existingMap = new Set(existing.map((item) => String(item?.ref || "").trim().toLowerCase()).filter(Boolean));
+
+    const created = [];
+    normalizedRefs.forEach((ref) => {
+        const key = ref.toLowerCase();
+        if (!key || existingMap.has(key)) return;
+
+        created.push({
+            id: (typeof DataTesauro?.generateId === "function") ? DataTesauro.generateId() : Math.random().toString(36).substring(2, 9),
+            ref,
+            nombre: humanizeTesauroName(ref),
+            tipo: "texto",
+            momento: "Solicitud",
+            agrupacion: "Agrupación"
+        });
+        existingMap.add(key);
+    });
+
+    if (!created.length) return 0;
+
+    if (window.DataTesauro && Array.isArray(DataTesauro.campos)) {
+        DataTesauro.campos = [...DataTesauro.campos, ...created];
+        DataTesauro.sync?.();
+        DataTesauro.render?.();
+    } else if (window.Engine) {
+        Engine.tesauro = [...existing, ...created];
+        Engine.saveHistory?.();
+        document.dispatchEvent(new CustomEvent("tesauroUpdated", { detail: { source: "LinkCodeApp" } }));
+    }
+
+    return created.length;
+};
+
 const refreshLinkCodeLog = () => {
     if (!linkCodeAppLog) return;
 
     const selectedProject = getSelectedLinkCodeAppItem();
-    const selectedTemplate = linkCodeTemplateSelect?.value || "";
-    const selectedNodeId = Number(linkCodeNodeSelect?.value || 0);
-    const selectedNode = getEligibleTemplateNodes().find((node) => node.id === selectedNodeId);
-
-    const lines = ["[RESUMEN VINCULACIÓN]"];
-    lines.push(`Proyecto APP CODE: ${selectedProject?.proyecto || "(sin seleccionar)"}`);
-    lines.push(`Plantilla: ${selectedTemplate || "(sin seleccionar)"}`);
-    lines.push(`Nodo destino: ${selectedNode ? `${selectedNode.titulo || `Nodo ${selectedNode.id}`} (${selectedNode.tipo})` : "(sin seleccionar)"}`);
-
-    if (selectedTemplate && selectedNode?.plantillaTexto) {
-        lines.push("");
-        lines.push("⚠️ El nodo ya tenía una plantilla configurada. Si vinculas, se sobrescribirá.");
+    if (!selectedProject) {
+        linkCodeAppLog.textContent = "Selecciona un proyecto para iniciar la vinculación guiada.";
+        return;
     }
 
-    linkCodeAppLog.textContent = lines.join("\n");
+    const templates = getUniqueCodeAppTemplates(selectedProject.plantillas);
+    const nodes = getEligibleTemplateNodes();
+    linkCodeAppLog.textContent = [
+        "[RESUMEN VINCULACIÓN GUIADA]",
+        `Proyecto APP CODE: ${selectedProject.proyecto || "(sin nombre)"}`,
+        `Plantillas detectadas: ${templates.length}`,
+        `Nodos elegibles en el flujo actual: ${nodes.length}`,
+        "",
+        "Al continuar, se abrirá un modal que recorre nodo a nodo para asignar plantilla o saltar."
+    ].join("\n");
 };
 
-const refreshLinkCodeSelections = () => {
-    const selected = getSelectedLinkCodeAppItem();
-    const templates = selected ? getUniqueCodeAppTemplates(selected.plantillas) : [];
-    const nodes = getEligibleTemplateNodes();
-
-    if (linkCodeTemplateSelect) {
-        const previous = linkCodeTemplateSelect.value;
-        linkCodeTemplateSelect.innerHTML = "";
-
-        if (!templates.length) {
-            const opt = document.createElement("option");
-            opt.value = "";
-            opt.textContent = "Sin plantillas disponibles";
-            linkCodeTemplateSelect.appendChild(opt);
-        } else {
-            const initialOpt = document.createElement("option");
-            initialOpt.value = "";
-            initialOpt.textContent = "Selecciona plantilla";
-            linkCodeTemplateSelect.appendChild(initialOpt);
-
-            templates.forEach((template) => {
-                const label = extractTemplateLabel(template);
-                const opt = document.createElement("option");
-                opt.value = label;
-                opt.textContent = label;
-                linkCodeTemplateSelect.appendChild(opt);
-            });
-
-            if (templates.some((template) => extractTemplateLabel(template) === previous)) {
-                linkCodeTemplateSelect.value = previous;
-            }
-        }
+const renderLinkCodeWizardStep = () => {
+    const total = linkCodeWizardNodes.length;
+    if (!total) {
+        closeLinkCodeWizardModal();
+        return;
     }
 
-    if (linkCodeNodeSelect) {
-        const previous = linkCodeNodeSelect.value;
-        linkCodeNodeSelect.innerHTML = "";
+    if (linkCodeWizardIndex >= total) {
+        const applied = [];
+        let createdTesauros = 0;
 
-        if (!nodes.length) {
-            const opt = document.createElement("option");
-            opt.value = "";
-            opt.textContent = "No hay nodos de tipo formulario/documento";
-            linkCodeNodeSelect.appendChild(opt);
-        } else {
-            const initialOpt = document.createElement("option");
-            initialOpt.value = "";
-            initialOpt.textContent = "Selecciona nodo";
-            linkCodeNodeSelect.appendChild(initialOpt);
+        linkCodeWizardAssignments.forEach((assignment, index) => {
+            if (!assignment?.templateName) return;
+            const node = linkCodeWizardNodes[index];
+            const template = linkCodeWizardTemplates.find((item) => extractTemplateLabel(item) === assignment.templateName);
+            if (!node || !template) return;
 
-            nodes.forEach((node) => {
-                const opt = document.createElement("option");
-                opt.value = String(node.id);
-                opt.textContent = `${node.titulo || `Nodo ${node.id}`} (${node.tipo})`;
-                linkCodeNodeSelect.appendChild(opt);
-            });
+            const markdown = extractTemplateMarkdown(template);
+            Engine.updateNode(node.id, { plantillaTexto: markdown });
+            applied.push({ node, templateName: assignment.templateName, markdown });
+        });
 
-            if (nodes.some((node) => String(node.id) === previous)) {
-                linkCodeNodeSelect.value = previous;
-            }
+        const refsFromMarkdown = applied.flatMap((item) => extractTesauroRefsFromMarkdown(item.markdown));
+        const refsFromProject = collectTesauroRefsFromProject(getSelectedLinkCodeAppItem());
+        createdTesauros = ensureTesaurosFromReferences([...refsFromProject, ...refsFromMarkdown]);
+
+        if (applied.length) {
+            Engine.saveHistory();
         }
+
+        closeLinkCodeWizardModal();
+        closeLinkCodeAppModal();
+
+        alert(`✅ Vinculación completada.
+Plantillas vinculadas: ${applied.length}.
+Tesauros creados automáticamente: ${createdTesauros}.`);
+        return;
     }
 
-    refreshLinkCodeLog();
+    const node = linkCodeWizardNodes[linkCodeWizardIndex];
+    if (!node) return;
+
+    if (linkCodeWizardStepTitle) {
+        linkCodeWizardStepTitle.textContent = `Nodo ${linkCodeWizardIndex + 1} de ${total}`;
+    }
+    if (linkCodeWizardSubtitle) {
+        linkCodeWizardSubtitle.textContent = `Nodo actual: ${node.titulo || `Nodo ${node.id}`} (${node.tipo}).`;
+    }
+    if (linkCodeWizardNodeInfo) {
+        linkCodeWizardNodeInfo.textContent = [
+            `ID: ${node.id}`,
+            `Título: ${node.titulo || "(sin título)"}`,
+            `Tipo: ${node.tipo}`,
+            `Plantilla actual: ${node.plantillaTexto ? "Sí" : "No"}`
+        ].join("\n");
+    }
+
+    if (linkCodeWizardTemplateSelect) {
+        const current = linkCodeWizardAssignments[linkCodeWizardIndex]?.templateName || "";
+        linkCodeWizardTemplateSelect.innerHTML = "";
+
+        const skipOpt = document.createElement("option");
+        skipOpt.value = "";
+        skipOpt.textContent = "(Saltar este nodo)";
+        linkCodeWizardTemplateSelect.appendChild(skipOpt);
+
+        linkCodeWizardTemplates.forEach((template) => {
+            const label = extractTemplateLabel(template);
+            if (!label) return;
+            const option = document.createElement("option");
+            option.value = label;
+            option.textContent = label;
+            linkCodeWizardTemplateSelect.appendChild(option);
+        });
+
+        linkCodeWizardTemplateSelect.value = current;
+    }
+};
+
+const startLinkCodeWizard = () => {
+    const selectedProject = getSelectedLinkCodeAppItem();
+    if (!selectedProject) {
+        alert("Selecciona un proyecto de APP CODE.");
+        return;
+    }
+
+    linkCodeWizardTemplates = getUniqueCodeAppTemplates(selectedProject.plantillas);
+    if (!linkCodeWizardTemplates.length) {
+        alert("El proyecto seleccionado no tiene plantillas disponibles.");
+        return;
+    }
+
+    linkCodeWizardNodes = getEligibleTemplateNodes();
+    if (!linkCodeWizardNodes.length) {
+        alert("No hay nodos de tipo Formulario o Documento en el flujo actual.");
+        return;
+    }
+
+    linkCodeWizardAssignments = linkCodeWizardNodes.map(() => ({ templateName: "" }));
+    linkCodeWizardIndex = 0;
+
+    if (linkCodeWizardModal) {
+        linkCodeWizardModal.classList.remove("hidden");
+        renderLinkCodeWizardStep();
+    }
+};
+
+const applyAndContinueLinkCodeWizard = () => {
+    const selectedTemplate = linkCodeWizardTemplateSelect?.value || "";
+    if (!selectedTemplate) {
+        alert("Selecciona una plantilla o usa 'Saltar nodo'.");
+        return;
+    }
+
+    linkCodeWizardAssignments[linkCodeWizardIndex] = { templateName: selectedTemplate };
+    linkCodeWizardIndex += 1;
+    renderLinkCodeWizardStep();
+};
+
+const skipLinkCodeWizardNode = () => {
+    linkCodeWizardAssignments[linkCodeWizardIndex] = { templateName: "" };
+    linkCodeWizardIndex += 1;
+    renderLinkCodeWizardStep();
 };
 
 const openLinkCodeAppModal = async () => {
@@ -1716,50 +1877,12 @@ const openLinkCodeAppModal = async () => {
         linkCodeAppSelectedId = null;
         renderLinkCodeAppFolders();
         renderLinkCodeAppList();
-        refreshLinkCodeSelections();
+        refreshLinkCodeLog();
         linkCodeAppModal.classList.remove("hidden");
     } catch (error) {
         console.error("Error cargando APP CODE para vinculación:", error);
         alert("❌ No se pudieron cargar los proyectos para vincular.");
     }
-};
-
-const linkTemplateToNode = () => {
-    const selectedProject = getSelectedLinkCodeAppItem();
-    if (!selectedProject) {
-        alert("Selecciona un proyecto de APP CODE.");
-        return;
-    }
-
-    const templateName = linkCodeTemplateSelect?.value || "";
-    const nodeId = Number(linkCodeNodeSelect?.value || 0);
-    const node = getEligibleTemplateNodes().find((candidate) => candidate.id === nodeId);
-
-    if (!templateName) {
-        alert("Selecciona una plantilla markdown.");
-        return;
-    }
-
-    if (!node) {
-        alert("Selecciona un nodo de tipo Formulario o Documento.");
-        return;
-    }
-
-    const template = getUniqueCodeAppTemplates(selectedProject.plantillas)
-        .find((item) => extractTemplateLabel(item) === templateName);
-
-    if (!template) {
-        alert("No se encontró la plantilla seleccionada.");
-        return;
-    }
-
-    Engine.updateNode(node.id, {
-        plantillaTexto: extractTemplateMarkdown(template)
-    });
-    Engine.saveHistory();
-    refreshLinkCodeSelections();
-
-    alert(`✅ Plantilla "${templateName}" vinculada al nodo "${node.titulo || `Nodo ${node.id}`}".`);
 };
 
 const importProjectFromCodeApp = () => {
@@ -1846,16 +1969,28 @@ if (linkCodeAppModal) {
     });
 }
 
-if (linkCodeTemplateSelect) {
-    linkCodeTemplateSelect.addEventListener("change", refreshLinkCodeLog);
-}
-
-if (linkCodeNodeSelect) {
-    linkCodeNodeSelect.addEventListener("change", refreshLinkCodeLog);
-}
-
 if (linkCodeAppAction) {
-    linkCodeAppAction.addEventListener("click", linkTemplateToNode);
+    linkCodeAppAction.addEventListener("click", startLinkCodeWizard);
+}
+
+if (linkCodeWizardClose) {
+    linkCodeWizardClose.addEventListener("click", closeLinkCodeWizardModal);
+}
+
+if (linkCodeWizardModal) {
+    linkCodeWizardModal.addEventListener("click", (event) => {
+        if (event.target === linkCodeWizardModal) {
+            closeLinkCodeWizardModal();
+        }
+    });
+}
+
+if (linkCodeWizardApply) {
+    linkCodeWizardApply.addEventListener("click", applyAndContinueLinkCodeWizard);
+}
+
+if (linkCodeWizardSkip) {
+    linkCodeWizardSkip.addEventListener("click", skipLinkCodeWizardNode);
 }
    
    /* ========================================================

@@ -255,7 +255,7 @@
         <div class="csv-modal-header flow-db-header">
             <div class="flow-db-title">
                 <h2>Vincular proyecto APP CODE</h2>
-                <p>Vincula plantillas markdown del proyecto seleccionado con nodos tipo Formulario/Documento del flujo actual.</p>
+                <p>Selecciona el proyecto APP CODE y continúa con una vinculación guiada nodo a nodo.</p>
             </div>
             <button id="linkCodeAppClose" class="csv-close-btn" aria-label="Cerrar">&times;</button>
         </div>
@@ -268,24 +268,40 @@
             </aside>
             <section class="flow-db-content">
                 <div id="linkCodeAppList" class="flow-db-list"></div>
-                <div class="flow-db-content-header link-codeapp-fields">
-                    <div class="flow-db-field">
-                        <label for="linkCodeTemplateSelect">Plantilla markdown</label>
-                        <select id="linkCodeTemplateSelect"></select>
-                    </div>
-                    <div class="flow-db-field">
-                        <label for="linkCodeNodeSelect">Nodo destino (Formulario/Documento)</label>
-                        <select id="linkCodeNodeSelect"></select>
-                    </div>
-                </div>
                 <div class="flow-db-log-box">
-                    <h4>Resumen de vinculación</h4>
-                    <pre id="linkCodeAppLog" class="flow-db-log">Selecciona un proyecto, una plantilla y un nodo para vincular.</pre>
+                    <h4>Resumen</h4>
+                    <pre id="linkCodeAppLog" class="flow-db-log">Selecciona un proyecto para iniciar la vinculación guiada.</pre>
                 </div>
                 <div class="flow-db-actions">
-                    <button id="linkCodeAppAction" class="btn btn-flowdb">Vincular plantilla con nodo</button>
+                    <button id="linkCodeAppAction" class="btn btn-flowdb">Continuar vinculación</button>
                 </div>
             </section>
+        </div>
+    </div>
+</div>
+
+<div id="linkCodeWizardModal" class="modal hidden">
+    <div class="modal-content modal-content--wide flow-db-modal">
+        <div class="csv-modal-header flow-db-header">
+            <div class="flow-db-title">
+                <h2>Vinculación guiada nodo a nodo</h2>
+                <p id="linkCodeWizardSubtitle">Selecciona plantilla o salta el nodo actual.</p>
+            </div>
+            <button id="linkCodeWizardClose" class="csv-close-btn" aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="flow-db-content">
+            <div class="flow-db-log-box">
+                <h4 id="linkCodeWizardStepTitle">Nodo 1</h4>
+                <pre id="linkCodeWizardNodeInfo" class="flow-db-log"></pre>
+            </div>
+            <div class="flow-db-field">
+                <label for="linkCodeWizardTemplateSelect">Plantilla para este nodo</label>
+                <select id="linkCodeWizardTemplateSelect"></select>
+            </div>
+            <div class="flow-db-actions">
+                <button id="linkCodeWizardSkip" class="btn btn-flowdb">Saltar nodo</button>
+                <button id="linkCodeWizardApply" class="btn btn-flowdb">Asignar y seguir</button>
+            </div>
         </div>
     </div>
 </div>

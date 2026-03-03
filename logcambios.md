@@ -1,5 +1,11 @@
 # Historial de cambios
 
+## v1.1.65
+- Rehecho el flujo de **Vincular proyecto** para que, tras elegir proyecto APP CODE, se abra un segundo modal de vinculación guiada que recorre nodo a nodo del flujo actual (Formulario/Documento), permitiendo seleccionar plantilla o saltar cada nodo.
+- Al finalizar el recorrido guiado, se aplican de una vez todas las vinculaciones (`markdown` → `plantillaTexto`) sobre los nodos seleccionados, manteniendo intacto el resto del diagrama.
+- Añadida revisión automática de tesauros: se detectan referencias en tesauros del proyecto vinculado y en el contenido markdown asignado, y se crean en el proyecto los tesauros faltantes con valores por defecto.
+- Consolidación de versión de la app en `1.1.65`.
+
 ## v1.1.64
 - Corregido un error de sintaxis en `js/ui/ui.js` dentro del flujo de vinculación que impedía la ejecución del JavaScript global (afectando login, carga BDD y otras funciones de la app).
 - Revertido el ajuste de refactor sobre la carga existente de APP CODE para no tocar los flujos de login/carga ya consolidados.
