@@ -1,5 +1,10 @@
 # Historial de cambios
 
+## v1.1.66
+- Corregida la detección de nodos elegibles en la vinculación guiada: ahora toma los nodos reales del flujo desde `Engine.data.nodos` (con fallback), evitando el falso mensaje de “no hay nodos de formulario o documento”.
+- Se mantiene el resto del flujo de vinculación guiada y alta automática de tesauros sin cambios.
+- Consolidación de versión de la app en `1.1.66`.
+
 ## v1.1.65
 - Rehecho el flujo de **Vincular proyecto** para que, tras elegir proyecto APP CODE, se abra un segundo modal de vinculación guiada que recorre nodo a nodo del flujo actual (Formulario/Documento), permitiendo seleccionar plantilla o saltar cada nodo.
 - Al finalizar el recorrido guiado, se aplican de una vez todas las vinculaciones (`markdown` → `plantillaTexto`) sobre los nodos seleccionados, manteniendo intacto el resto del diagrama.

@@ -1623,7 +1623,12 @@ const renderLinkCodeAppList = () => {
 };
 
 const getEligibleTemplateNodes = () => {
-    const nodes = Array.isArray(Engine?.nodes) ? Engine.nodes : [];
+    const nodes = Array.isArray(Engine?.data?.nodos)
+        ? Engine.data.nodos
+        : (Array.isArray(Engine?.nodos)
+            ? Engine.nodos
+            : (Array.isArray(Engine?.nodes) ? Engine.nodes : []));
+
     return nodes.filter((node) => ["formulario", "documento"].includes(String(node?.tipo || "").toLowerCase()));
 };
 
