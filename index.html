@@ -69,7 +69,6 @@
                     <button class="btn" id="btnImportJSON" onclick="document.getElementById('fileLoader').click()">📂 Cargar Json</button>
                     <button class="btn" id="btnLoadJSONDb">🗄️ Cargar de BDD</button>
                     <button class="btn" id="btnLoadCodeApp">🧩 Cargar desde APP CODE</button>
-                    <button class="btn" id="btnLinkCodeAppProject">🔗 Vincular proyecto</button>
                     <div class="json-buttons-row">
                         <button id="btnPasteJSON">📋 Pegar JSON</button>
                         <button id="btnIAJson" title="Abrir asistente IA JSON">
@@ -243,49 +242,6 @@
             <textarea id="importTextTextarea" placeholder="Pega aquí la definición de tareas…"></textarea>
             <button id="importTextLoad" class="btn btn-import-load">Cargar</button>
             <div id="importTextSummary" class="csv-content import-text-summary"></div>
-        </div>
-    </div>
-</div>
-
-<!-- =========================
-    MODAL VINCULAR PROYECTO APP CODE A NODOS EXISTENTES
-========================= -->
-<div id="linkCodeAppModal" class="modal hidden">
-    <div class="modal-content modal-content--wide flow-db-modal">
-        <div class="csv-modal-header flow-db-header">
-            <div class="flow-db-title">
-                <h2>Vincular proyecto APP CODE</h2>
-                <p>Vincula plantillas markdown del proyecto seleccionado con nodos tipo Formulario/Documento del flujo actual.</p>
-            </div>
-            <button id="linkCodeAppClose" class="csv-close-btn" aria-label="Cerrar">&times;</button>
-        </div>
-        <div class="flow-db-body">
-            <aside class="flow-db-sidebar">
-                <div class="flow-db-sidebar-header">
-                    <h3>Subfunciones</h3>
-                </div>
-                <div id="linkCodeAppFolders" class="flow-db-folders"></div>
-            </aside>
-            <section class="flow-db-content">
-                <div id="linkCodeAppList" class="flow-db-list"></div>
-                <div class="flow-db-content-header link-codeapp-fields">
-                    <div class="flow-db-field">
-                        <label for="linkCodeTemplateSelect">Plantilla markdown</label>
-                        <select id="linkCodeTemplateSelect"></select>
-                    </div>
-                    <div class="flow-db-field">
-                        <label for="linkCodeNodeSelect">Nodo destino (Formulario/Documento)</label>
-                        <select id="linkCodeNodeSelect"></select>
-                    </div>
-                </div>
-                <div class="flow-db-log-box">
-                    <h4>Resumen de vinculación</h4>
-                    <pre id="linkCodeAppLog" class="flow-db-log">Selecciona un proyecto, una plantilla y un nodo para vincular.</pre>
-                </div>
-                <div class="flow-db-actions">
-                    <button id="linkCodeAppAction" class="btn btn-flowdb">Vincular plantilla con nodo</button>
-                </div>
-            </section>
         </div>
     </div>
 </div>
