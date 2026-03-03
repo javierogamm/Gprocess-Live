@@ -1,5 +1,17 @@
 # Historial de cambios
 
+## v1.1.64
+- Corregido un error de sintaxis en `js/ui/ui.js` dentro del flujo de vinculación que impedía la ejecución del JavaScript global (afectando login, carga BDD y otras funciones de la app).
+- Revertido el ajuste de refactor sobre la carga existente de APP CODE para no tocar los flujos de login/carga ya consolidados.
+- Mantenida la nueva funcionalidad **"Vincular proyecto"** para enlazar plantillas markdown de `Code_Markdowns` con nodos existentes de tipo Formulario/Documento, sin reemplazar el diagrama actual.
+- Consolidación de versión de la app en `1.1.64`.
+
+## v1.1.63
+- Añadido en el panel izquierdo (sección Cargar) el nuevo botón **"Vincular proyecto"** para abrir un flujo de vinculación sin reemplazar el diagrama actual.
+- Incorporado un modal de vinculación con subfunciones/proyectos de `Code_Markdowns`, selector de plantilla markdown y selector de nodo destino existente (solo tipos Formulario/Documento).
+- Implementada la asignación directa de `markdown` como `plantillaTexto` sobre el nodo seleccionado, conservando el flujo, nodos y tesauros existentes.
+- Consolidación de versión de la app en `1.1.63`.
+
 ## v1.1.62
 - Añadida la funcionalidad **"Validar tesauros configurados"** en el panel lateral de Tesauro, ubicada bajo el botón de Gestor completo y con modal ancho de validación en 5 pasos.
 - Implementado el flujo guiado de validación: revisión de tesauros actuales, pegado de copypaste, matching por referencia, captura/validación de valores para selectores coincidentes y resumen previo a aplicar cambios.
