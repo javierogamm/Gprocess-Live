@@ -1,5 +1,12 @@
 # Historial de cambios
 
+## v1.1.68
+- Reforzado el guardado en BDD: al guardar un proyecto cargado/ya guardado queda preseleccionado para crear **Guardar copia** y la nueva copia pasa a ser el proyecto activo.
+- Implementada la protección de salida con cambios sin guardar (aviso al intentar salir/cambiar URL con `beforeunload`).
+- Añadido historial de versiones con backups en BDD: nuevo modal de historial desde Cargar de BDD para cargar/restaurar versiones anteriores.
+- Extendida la API de `process-flows` con soporte de backups en `Process_Flows_BACKUP` y consulta de historial por `ID_Origen`.
+- Consolidación de versión de la app en `1.1.68`.
+
 ## v1.1.67
 - Añadido un indicador visual compacto dentro del nodo (icono de documento en esquina inferior derecha) cuando el nodo de tipo Formulario/Documento tiene plantilla configurada (`plantillaTexto` con contenido).
 - Implementada la actualización en caliente del indicador al guardar o vaciar la plantilla desde el editor, sin necesidad de recrear el nodo.

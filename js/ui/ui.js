@@ -786,6 +786,30 @@ if (userPassInput) {
 // ========================================================
 // GUARDAR / CARGAR JSON DESDE BDD (SUPABASE)
 // ========================================================
+const confirmLeaveWithoutSaving = () => confirm("Tienes cambios sin guardar. ¿Deseas salir sin guardar?");
+
+window.addEventListener("beforeunload", (event) => {
+    if (!flowDbDirty) return;
+    event.preventDefault();
+    event.returnValue = "";
+});
+
+window.addEventListener("popstate", () => {
+    if (!flowDbDirty) return;
+    const ok = confirmLeaveWithoutSaving();
+    if (!ok) {
+        history.pushState(null, "", window.location.href);
+    } else {
+        markFlowDbSaved();
+    }
+});
+
+history.replaceState(null, "", window.location.href);
+
+window.addEventListener("flow:dirty-change", (event) => {
+    markFlowDbDirty(Boolean(event?.detail?.dirty));
+});
+
 const btnSaveJSONDb = document.getElementById("btnSaveJSONDb");
 const btnLoadJSONDb = document.getElementById("btnLoadJSONDb");
 const flowDbModal = document.getElementById("flowDbModal");
@@ -798,8 +822,16 @@ const flowDbSubfuncionInput = document.getElementById("flowDbSubfuncionInput");
 const flowDbNameInput = document.getElementById("flowDbNameInput");
 const flowDbNameField = document.getElementById("flowDbNameField");
 const flowDbPrimaryAction = document.getElementById("flowDbPrimaryAction");
+const flowDbHistoryAction = document.getElementById("flowDbHistoryAction");
 const flowDbOverwriteAction = document.getElementById("flowDbOverwriteAction");
 const flowDbDeleteAction = document.getElementById("flowDbDeleteAction");
+const flowHistoryModal = document.getElementById("flowHistoryModal");
+const flowHistoryClose = document.getElementById("flowHistoryClose");
+const flowHistoryTitle = document.getElementById("flowHistoryTitle");
+const flowHistorySubtitle = document.getElementById("flowHistorySubtitle");
+const flowHistoryList = document.getElementById("flowHistoryList");
+const flowHistoryLoadAction = document.getElementById("flowHistoryLoadAction");
+const flowHistoryRestoreAction = document.getElementById("flowHistoryRestoreAction");
 const flowDbNewSubfuncion = document.getElementById("flowDbNewSubfuncion");
 const btnLoadCodeApp = document.getElementById("btnLoadCodeApp");
 const codeAppModal = document.getElementById("codeAppModal");
@@ -829,6 +861,10 @@ let flowDbMode = "load";
 let flowDbSubfunciones = [];
 let flowDbActiveSubfuncion = "";
 let flowDbSelectedId = null;
+let flowDbActiveProjectId = null;
+let flowDbDirty = false;
+let flowDbSelectedBackupId = null;
+let flowDbBackupItems = [];
 let codeAppItems = [];
 let codeAppSubfunciones = [];
 let codeAppActiveSubfuncion = "";
@@ -853,6 +889,22 @@ const normalizeUserName = (value) => {
     return value.trim();
 };
 
+const markFlowDbDirty = (value = true) => {
+    flowDbDirty = Boolean(value);
+};
+
+const markFlowDbSaved = () => {
+    flowDbDirty = false;
+    if (window.Engine && typeof Engine.setUnsavedChanges === "function") {
+        Engine.setUnsavedChanges(false);
+    }
+};
+
+const setActiveFlowProject = (item) => {
+    const projectId = item?.id ?? item?.ID_Origen ?? null;
+    flowDbActiveProjectId = projectId ? String(projectId) : null;
+};
+
 const getSelectedFlowItem = () =>
     flowDbItems.find((item) => String(item.id) === String(flowDbSelectedId)) || null;
 
@@ -867,6 +919,11 @@ const refreshFlowDbActionButtons = () => {
     const selected = getSelectedFlowItem();
     const canManage = flowDbMode === "save" && canCurrentUserManageFlow(selected);
 
+    if (flowDbHistoryAction) {
+        flowDbHistoryAction.style.display = flowDbMode === "load" && selected ? "inline-flex" : "none";
+        flowDbHistoryAction.disabled = !selected;
+    }
+
     if (flowDbOverwriteAction) {
         flowDbOverwriteAction.style.display = flowDbMode === "save" ? "inline-flex" : "none";
         flowDbOverwriteAction.disabled = !canManage;
@@ -880,6 +937,77 @@ const refreshFlowDbActionButtons = () => {
 
 const closeFlowDbModal = () => {
     if (flowDbModal) flowDbModal.classList.add("hidden");
+};
+
+const closeFlowHistoryModal = () => {
+    if (flowHistoryModal) flowHistoryModal.classList.add("hidden");
+};
+
+const getSelectedBackupItem = () =>
+    flowDbBackupItems.find((item) => String(item.id) === String(flowDbSelectedBackupId)) || null;
+
+const renderFlowHistoryList = () => {
+    if (!flowHistoryList) return;
+    flowHistoryList.innerHTML = "";
+
+    if (!flowDbBackupItems.length) {
+        const empty = document.createElement("p");
+        empty.textContent = "No hay versiones disponibles para este proyecto.";
+        empty.style.color = "#64748b";
+        flowHistoryList.appendChild(empty);
+        return;
+    }
+
+    flowDbBackupItems.forEach((item) => {
+        const row = document.createElement("button");
+        row.type = "button";
+        row.className = "flow-db-item";
+        if (String(item.id) === String(flowDbSelectedBackupId)) {
+            row.classList.add("flow-db-item--active");
+        }
+
+        const savedAt = item.fecha_guardado || item.created_at;
+        const stamp = savedAt ? new Date(savedAt).toLocaleString() : "Fecha desconocida";
+        row.innerHTML = `<h4>Versión #${item.id}</h4><p>${stamp} • Origen: ${item.ID_Origen || "-"}</p>`;
+        row.addEventListener("click", () => {
+            flowDbSelectedBackupId = item.id;
+            renderFlowHistoryList();
+        });
+        flowHistoryList.appendChild(row);
+    });
+};
+
+const openFlowHistoryModal = async () => {
+    const selected = getSelectedFlowItem();
+    if (!selected) {
+        alert("Selecciona un proyecto para consultar su historial.");
+        return;
+    }
+
+    try {
+        const originId = selected.ID_Origen || selected.id;
+        const response = await fetch(`/api/process-flows?backup=1&originId=${encodeURIComponent(originId)}`);
+        const payload = await response.json();
+        if (!response.ok) {
+            throw new Error(payload?.error || "No se pudo cargar el historial.");
+        }
+
+        flowDbBackupItems = Array.isArray(payload?.data) ? payload.data : [];
+        flowDbSelectedBackupId = flowDbBackupItems[0]?.id || null;
+
+        if (flowHistoryTitle) {
+            flowHistoryTitle.textContent = `Historial de versiones · ${selected.nombre || "Sin nombre"}`;
+        }
+        if (flowHistorySubtitle) {
+            flowHistorySubtitle.textContent = `Proyecto origen: ${originId}`;
+        }
+
+        renderFlowHistoryList();
+        if (flowHistoryModal) flowHistoryModal.classList.remove("hidden");
+    } catch (error) {
+        console.error("Error cargando historial de backups:", error);
+        alert("❌ No se pudo cargar el historial de versiones.");
+    }
 };
 
 const setFlowDbMode = (mode) => {
@@ -984,7 +1112,7 @@ const renderFlowList = () => {
         info.appendChild(meta);
 
         const action = document.createElement("span");
-        action.textContent = flowDbMode === "save" ? "Usar nombre" : "Seleccionar";
+        action.textContent = flowDbMode === "save" ? "Proyecto activo" : "Seleccionar";
         action.style.color = "#94a3b8";
         action.style.fontSize = "12px";
 
@@ -992,6 +1120,7 @@ const renderFlowList = () => {
         button.appendChild(action);
         button.addEventListener("click", () => {
             flowDbSelectedId = item.id;
+            setActiveFlowProject(item);
             if (flowDbMode === "save" && flowDbNameInput) {
                 flowDbNameInput.value = item.nombre || "";
             }
@@ -1025,6 +1154,8 @@ const openFlowDbModal = async (mode) => {
         flowDbNameInput.value = Engine.fichaProyecto?.procedimiento?.trim() || "";
     }
 
+    const preferredActiveId = flowDbActiveProjectId ? String(flowDbActiveProjectId) : null;
+
     try {
         const response = await fetch("/api/process-flows");
         const payload = await response.json();
@@ -1039,7 +1170,20 @@ const openFlowDbModal = async (mode) => {
         }
 
         buildSubfuncionesList(flowDbItems);
-        setActiveSubfuncion(flowDbSubfunciones[0]);
+
+        const preferredItem = preferredActiveId
+            ? flowDbItems.find((item) => String(item.id) === preferredActiveId)
+            : null;
+
+        if (preferredItem) {
+            flowDbSelectedId = preferredItem.id;
+            setActiveSubfuncion(normalizeSubfuncion(preferredItem.subfuncion));
+            if (flowDbNameInput && mode === "save") {
+                flowDbNameInput.value = preferredItem.nombre || flowDbNameInput.value;
+            }
+        } else {
+            setActiveSubfuncion(flowDbSubfunciones[0]);
+        }
         refreshFlowDbActionButtons();
         flowDbModal.classList.remove("hidden");
     } catch (error) {
@@ -1072,6 +1216,89 @@ if (flowDbModal) {
     });
 }
 
+if (flowDbHistoryAction) {
+    flowDbHistoryAction.addEventListener("click", openFlowHistoryModal);
+}
+
+if (flowHistoryClose) {
+    flowHistoryClose.addEventListener("click", closeFlowHistoryModal);
+}
+
+if (flowHistoryModal) {
+    flowHistoryModal.addEventListener("click", (event) => {
+        if (event.target === flowHistoryModal) {
+            closeFlowHistoryModal();
+        }
+    });
+}
+
+if (flowHistoryLoadAction) {
+    flowHistoryLoadAction.addEventListener("click", async () => {
+        const selectedBackup = getSelectedBackupItem();
+        if (!selectedBackup) {
+            alert("Selecciona una versión para cargarla.");
+            return;
+        }
+
+        try {
+            let flowData = selectedBackup.flow;
+            if (typeof flowData === "string") flowData = JSON.parse(flowData);
+            Engine.importFromJSON(JSON.stringify(flowData));
+            setActiveFlowProject({ id: selectedBackup.ID_Origen || selectedBackup.id });
+            markFlowDbSaved();
+            closeFlowHistoryModal();
+            closeFlowDbModal();
+            alert("✅ Versión histórica cargada correctamente.");
+        } catch (error) {
+            console.error("Error cargando versión histórica:", error);
+            alert("❌ No se pudo cargar la versión seleccionada.");
+        }
+    });
+}
+
+if (flowHistoryRestoreAction) {
+    flowHistoryRestoreAction.addEventListener("click", async () => {
+        const selectedFlow = getSelectedFlowItem();
+        const selectedBackup = getSelectedBackupItem();
+        if (!selectedFlow || !selectedBackup) {
+            alert("Selecciona proyecto y versión a restaurar.");
+            return;
+        }
+
+        const confirmed = confirm("Se creará una nueva copia restaurada y pasará a ser el proyecto activo. ¿Continuar?");
+        if (!confirmed) return;
+
+        try {
+            const response = await fetch("/api/process-flows", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    nombre: selectedFlow.nombre,
+                    subfuncion: selectedFlow.subfuncion || "Sin subfunción",
+                    creador: selectedFlow.creador,
+                    actor: currentUser?.name,
+                    ID_Origen: selectedBackup.ID_Origen || selectedFlow.ID_Origen || selectedFlow.id,
+                    flow: selectedBackup.flow
+                })
+            });
+            const payload = await response.json();
+            if (!response.ok) throw new Error(payload?.error || "No se pudo restaurar la versión.");
+
+            const restored = Array.isArray(payload?.data) ? payload.data[payload.data.length - 1] : payload?.data;
+            if (restored) {
+                setActiveFlowProject(restored);
+                markFlowDbSaved();
+            }
+            closeFlowHistoryModal();
+            closeFlowDbModal();
+            alert("✅ Versión restaurada correctamente como nueva copia.");
+        } catch (error) {
+            console.error("Error restaurando versión:", error);
+            alert("❌ No se pudo restaurar la versión.");
+        }
+    });
+}
+
 if (flowDbPrimaryAction) {
     flowDbPrimaryAction.addEventListener("click", async () => {
         if (flowDbMode === "load") {
@@ -1090,6 +1317,8 @@ if (flowDbPrimaryAction) {
                     flowData = JSON.parse(flowData);
                 }
                 Engine.importFromJSON(JSON.stringify(flowData));
+                setActiveFlowProject(selected);
+                markFlowDbSaved();
                 closeFlowDbModal();
                 alert("✅ Flujo cargado correctamente desde la base de datos.");
             } catch (error) {
@@ -1135,10 +1364,14 @@ if (flowDbPrimaryAction) {
 
             if (Array.isArray(data?.data) && data.data.length) {
                 flowDbItems = [...flowDbItems, ...data.data];
+                const created = data.data[data.data.length - 1];
+                setActiveFlowProject(created);
+                flowDbSelectedId = created.id;
                 buildSubfuncionesList(flowDbItems);
-                setActiveSubfuncion(normalizeSubfuncion(subfuncion || "Sin subfunción"));
+                setActiveSubfuncion(normalizeSubfuncion(created.subfuncion || subfuncion || "Sin subfunción"));
             }
 
+            markFlowDbSaved();
             closeFlowDbModal();
             alert("✅ Flujo guardado correctamente en la base de datos.");
         } catch (error) {
@@ -1168,13 +1401,13 @@ if (flowDbOverwriteAction) {
         }
 
         const confirmed = confirm(
-            `¿Seguro que quieres sobrescribir el flujo "${selected.nombre || "Sin nombre"}"?`
+            `Se guardará una copia de "${selected.nombre || "Sin nombre"}" y pasará a ser el proyecto activo. ¿Continuar?`
         );
         if (!confirmed) return;
 
         try {
-            const response = await fetch(`/api/process-flows?id=${encodeURIComponent(selected.id)}`, {
-                method: "PUT",
+            const response = await fetch("/api/process-flows", {
+                method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
@@ -1183,29 +1416,31 @@ if (flowDbOverwriteAction) {
                     subfuncion: subfuncion || "Sin subfunción",
                     creador: selected.creador,
                     actor: currentUser?.name,
+                    ID_Origen: selected.ID_Origen || selected.id,
                     flow: Engine.buildExportPayload()
                 })
             });
             const data = await response.json();
             if (!response.ok) {
-                throw new Error(data?.error || "Error al sobrescribir el flujo.");
+                throw new Error(data?.error || "Error al guardar la copia del flujo.");
             }
 
-            if (data?.data) {
-                flowDbItems = flowDbItems.map((item) =>
-                    String(item.id) === String(selected.id) ? data.data : item
-                );
+            const createdCopy = Array.isArray(data?.data) ? data.data[data.data.length - 1] : data?.data;
+            if (createdCopy) {
+                flowDbItems = [...flowDbItems, createdCopy];
                 buildSubfuncionesList(flowDbItems);
-                setActiveSubfuncion(normalizeSubfuncion(subfuncion || "Sin subfunción"));
-                flowDbSelectedId = selected.id;
+                setActiveSubfuncion(normalizeSubfuncion(createdCopy.subfuncion || subfuncion || "Sin subfunción"));
+                flowDbSelectedId = createdCopy.id;
+                setActiveFlowProject(createdCopy);
                 renderFlowList();
             }
 
+            markFlowDbSaved();
             closeFlowDbModal();
-            alert("✅ Flujo sobrescrito correctamente en la base de datos.");
+            alert("✅ Copia guardada correctamente en la base de datos.");
         } catch (error) {
-            console.error("Error sobrescribiendo flujo en BDD:", error);
-            alert("❌ No se pudo sobrescribir el flujo. Revisa la consola.");
+            console.error("Error guardando copia del flujo en BDD:", error);
+            alert("❌ No se pudo guardar la copia del flujo. Revisa la consola.");
         }
     });
 }
@@ -1239,6 +1474,9 @@ if (flowDbDeleteAction) {
 
             flowDbItems = flowDbItems.filter((item) => String(item.id) !== String(selected.id));
             flowDbSelectedId = null;
+            if (flowDbActiveProjectId && String(flowDbActiveProjectId) === String(selected.id)) {
+                flowDbActiveProjectId = null;
+            }
             buildSubfuncionesList(flowDbItems);
             const nextSubfuncion = flowDbSubfunciones.includes(flowDbActiveSubfuncion)
                 ? flowDbActiveSubfuncion
