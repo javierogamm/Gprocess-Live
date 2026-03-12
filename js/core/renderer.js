@@ -149,6 +149,10 @@ if (nodo.tipo === "formulario" || nodo.tipo === "documento") {
         }
     });
     div.appendChild(templateBtn);
+
+    if (typeof nodo.plantillaTexto === "string" && nodo.plantillaTexto.trim()) {
+        this.ensureTemplateIndicator(div);
+    }
 }
 
 /* ============================================================
@@ -918,6 +922,31 @@ _toSegments(pts) {
     
         // ❗️IMPORTANTE: NO recalculamos altura del nodo aquí
         // El tamaño del nodo solo cambia con el RESIZER.
+    },
+
+    ensureTemplateIndicator(nodeEl) {
+        if (!nodeEl || nodeEl.querySelector(".node-template-indicator")) return;
+
+        const indicator = document.createElement("span");
+        indicator.className = "node-template-indicator";
+        indicator.title = "Nodo con plantilla configurada";
+        indicator.textContent = "📄";
+        nodeEl.appendChild(indicator);
+    },
+
+    updateNodeTemplateIndicator(id) {
+        const nodeEl = document.getElementById(id);
+        const nodo = Engine.getNode(id);
+        if (!nodeEl || !nodo) return;
+
+        const hasTemplate = typeof nodo.plantillaTexto === "string" && nodo.plantillaTexto.trim();
+        const indicator = nodeEl.querySelector(".node-template-indicator");
+
+        if (hasTemplate) {
+            this.ensureTemplateIndicator(nodeEl);
+        } else if (indicator) {
+            indicator.remove();
+        }
     },
     
 /* ========================================================

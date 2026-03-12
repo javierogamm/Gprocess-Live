@@ -774,6 +774,10 @@ alignSelectedNodes() {
         nodo.plantillaTexto = typeof props.plantillaTexto === "string"
             ? props.plantillaTexto
             : "";
+
+        if (Renderer?.updateNodeTemplateIndicator) {
+            Renderer.updateNodeTemplateIndicator(id);
+        }
     }
 
     // ⭐ Manejo de arrays de asignaciones

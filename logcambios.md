@@ -1,5 +1,10 @@
 # Historial de cambios
 
+## v1.1.67
+- Añadido un indicador visual compacto dentro del nodo (icono de documento en esquina inferior derecha) cuando el nodo de tipo Formulario/Documento tiene plantilla configurada (`plantillaTexto` con contenido).
+- Implementada la actualización en caliente del indicador al guardar o vaciar la plantilla desde el editor, sin necesidad de recrear el nodo.
+- Actualizada la versión de la app a `1.1.67` para esta consolidación.
+
 ## v1.1.66
 - Corregida la detección de nodos elegibles en la vinculación guiada: ahora toma los nodos reales del flujo desde `Engine.data.nodos` (con fallback), evitando el falso mensaje de “no hay nodos de formulario o documento”.
 - Se mantiene el resto del flujo de vinculación guiada y alta automática de tesauros sin cambios.

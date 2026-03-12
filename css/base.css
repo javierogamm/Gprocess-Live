@@ -303,6 +303,25 @@ input {
     background: #c63c45;
 }
 
+.node-template-indicator {
+    position: absolute;
+    right: 6px;
+    bottom: 6px;
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    background: rgba(227, 72, 80, 0.92);
+    color: #ffffff;
+    font-size: 10px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+    pointer-events: none;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
 
 /* ============================================
    HANDLES DE CONEXIÓN
