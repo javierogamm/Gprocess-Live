@@ -1260,12 +1260,12 @@ if (flowHistoryRestoreAction) {
     flowHistoryRestoreAction.addEventListener("click", async () => {
         const selectedFlow = getSelectedFlowItem();
         const selectedBackup = getSelectedBackupItem();
-        if (!selectedFlow || !selectedBackup) {
-            alert("Selecciona proyecto y versión a restaurar.");
+        if (!selectedBackup) {
+            alert("Selecciona una versión a restaurar.");
             return;
         }
 
-        const confirmed = confirm("Se creará una nueva copia restaurada y pasará a ser el proyecto activo. ¿Continuar?");
+        const confirmed = confirm("La restauración hará un nuevo guardado desde la versión elegida y quedará como proyecto activo. ¿Continuar?");
         if (!confirmed) return;
 
         try {
@@ -1273,11 +1273,11 @@ if (flowHistoryRestoreAction) {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    nombre: selectedFlow.nombre,
-                    subfuncion: selectedFlow.subfuncion || "Sin subfunción",
-                    creador: selectedFlow.creador,
+                    nombre: selectedBackup.nombre || selectedFlow?.nombre || "Sin nombre",
+                    subfuncion: selectedBackup.subfuncion || selectedFlow?.subfuncion || "Sin subfunción",
+                    creador: selectedBackup.creador || selectedFlow?.creador || currentUser?.name || null,
                     actor: currentUser?.name,
-                    ID_Origen: selectedBackup.ID_Origen || selectedFlow.ID_Origen || selectedFlow.id,
+                    ID_Origen: selectedBackup.ID_Origen || selectedFlow?.ID_Origen || selectedFlow?.id,
                     flow: selectedBackup.flow
                 })
             });
@@ -1291,7 +1291,7 @@ if (flowHistoryRestoreAction) {
             }
             closeFlowHistoryModal();
             closeFlowDbModal();
-            alert("✅ Versión restaurada correctamente como nueva copia.");
+            alert("✅ Versión restaurada correctamente mediante nuevo guardado.");
         } catch (error) {
             console.error("Error restaurando versión:", error);
             alert("❌ No se pudo restaurar la versión.");

@@ -1,5 +1,10 @@
 # Historial de cambios
 
+## v1.1.70
+- Ajustado el flujo de **Restaurar versión** para que haga un **nuevo guardado** (nueva fila) usando los datos de la versión seleccionada en historial (`nombre`, `subfuncion`, `creador`, `flow`).
+- Eliminada la semántica de “copia” en los mensajes de restauración: ahora refleja explícitamente que la restauración consolida un nuevo guardado y lo deja como proyecto activo.
+- Consolidación de versión de la app en `1.1.70`.
+
 ## v1.1.69
 - Ajustado el guardado por defecto en BDD para proyectos activos abiertos: ahora propone **sobrescribir el proyecto activo** con confirmación explícita.
 - Si se cancela la sobrescritura, el flujo ofrece **Guardar copia** también con confirmación, manteniendo la copia como proyecto activo.
