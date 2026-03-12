@@ -1007,6 +1007,13 @@ resizeSelectedNodes(scaleFactor) {
       FICHA DESCRIPTIVA
     ============================================================ */
 
+    hasUnsavedChanges: false,
+
+    setUnsavedChanges(value) {
+        this.hasUnsavedChanges = Boolean(value);
+        window.dispatchEvent(new CustomEvent("flow:dirty-change", { detail: { dirty: this.hasUnsavedChanges } }));
+    },
+
     updateFichaProyecto(data) {
         if (data.procedimiento !== undefined)
             this.fichaProyecto.procedimiento = data.procedimiento;
@@ -1040,6 +1047,7 @@ resizeSelectedNodes(scaleFactor) {
         this.history.push(snapshot);
         if (this.history.length > 50) this.history.shift();
         this.future = [];
+        this.setUnsavedChanges(true);
         // console.log(`💾 Guardado: ${this.history.length}`);
     },
 

@@ -339,11 +339,34 @@
                 </div>
                 <div id="flowDbList" class="flow-db-list"></div>
                 <div class="flow-db-actions">
-                    <button id="flowDbOverwriteAction" class="btn btn-flowdb" style="display:none;">Sobrescribir</button>
+                    <button id="flowDbHistoryAction" class="btn btn-flowdb" style="display:none;">Historial</button>
+                    <button id="flowDbOverwriteAction" class="btn btn-flowdb" style="display:none;">Guardar copia</button>
                     <button id="flowDbDeleteAction" class="btn btn-flowdb" style="display:none;">Eliminar</button>
                     <button id="flowDbPrimaryAction" class="btn btn-flowdb">Guardar</button>
                 </div>
             </section>
+        </div>
+    </div>
+</div>
+
+<!-- =========================
+    MODAL HISTORIAL DE VERSIONES (BACKUP)
+========================= -->
+<div id="flowHistoryModal" class="modal hidden">
+    <div class="modal-content modal-content--wide flow-db-modal">
+        <div class="csv-modal-header flow-db-header">
+            <div class="flow-db-title">
+                <h2 id="flowHistoryTitle">Historial de versiones</h2>
+                <p id="flowHistorySubtitle">Selecciona una versión para cargarla o restaurarla.</p>
+            </div>
+            <button id="flowHistoryClose" class="csv-close-btn" aria-label="Cerrar">&times;</button>
+        </div>
+        <div class="flow-db-content">
+            <div id="flowHistoryList" class="flow-db-list"></div>
+            <div class="flow-db-actions">
+                <button id="flowHistoryLoadAction" class="btn btn-flowdb">Cargar versión</button>
+                <button id="flowHistoryRestoreAction" class="btn btn-flowdb">Restaurar versión</button>
+            </div>
         </div>
     </div>
 </div>

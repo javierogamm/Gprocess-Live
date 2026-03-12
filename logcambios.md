@@ -1,5 +1,23 @@
 # Historial de cambios
 
+## v1.1.70
+- Ajustado el flujo de **Restaurar versión** para que haga un **nuevo guardado** (nueva fila) usando los datos de la versión seleccionada en historial (`nombre`, `subfuncion`, `creador`, `flow`).
+- Eliminada la semántica de “copia” en los mensajes de restauración: ahora refleja explícitamente que la restauración consolida un nuevo guardado y lo deja como proyecto activo.
+- Consolidación de versión de la app en `1.1.70`.
+
+## v1.1.69
+- Ajustado el guardado por defecto en BDD para proyectos activos abiertos: ahora propone **sobrescribir el proyecto activo** con confirmación explícita.
+- Si se cancela la sobrescritura, el flujo ofrece **Guardar copia** también con confirmación, manteniendo la copia como proyecto activo.
+- Se mantiene el historial/backup y la traza por `ID_Origen`, consolidando el comportamiento pedido para guardar/sobrescribir.
+- Consolidación de versión de la app en `1.1.69`.
+
+## v1.1.68
+- Reforzado el guardado en BDD: al guardar un proyecto cargado/ya guardado queda preseleccionado para crear **Guardar copia** y la nueva copia pasa a ser el proyecto activo.
+- Implementada la protección de salida con cambios sin guardar (aviso al intentar salir/cambiar URL con `beforeunload`).
+- Añadido historial de versiones con backups en BDD: nuevo modal de historial desde Cargar de BDD para cargar/restaurar versiones anteriores.
+- Extendida la API de `process-flows` con soporte de backups en `Process_Flows_BACKUP` y consulta de historial por `ID_Origen`.
+- Consolidación de versión de la app en `1.1.68`.
+
 ## v1.1.67
 - Añadido un indicador visual compacto dentro del nodo (icono de documento en esquina inferior derecha) cuando el nodo de tipo Formulario/Documento tiene plantilla configurada (`plantillaTexto` con contenido).
 - Implementada la actualización en caliente del indicador al guardar o vaciar la plantilla desde el editor, sin necesidad de recrear el nodo.

@@ -140,10 +140,65 @@ const normalizeFlow = (flow) => {
   delete payload.connections;
   return payload;
 };
+const normalizeFlowRecord = (item) => ({
+  ...item,
+  flow: normalizeFlow(item.flow),
+  ID_Origen: item?.ID_Origen ?? item?.id ?? null,
+});
+
+const createBackupRows = (items, insertedRows = []) => {
+  const nowIso = new Date().toISOString();
+  return (insertedRows || []).map((row, idx) => {
+    const source = items[idx] || {};
+    return {
+      nombre: row?.nombre ?? source?.nombre ?? null,
+      flow: normalizeFlow(row?.flow ?? source?.flow ?? source),
+      subfuncion: row?.subfuncion ?? source?.subfuncion ?? null,
+      creador: row?.creador ?? source?.creador ?? null,
+      fecha_guardado: nowIso,
+      ID_Origen: source?.ID_Origen ?? row?.ID_Origen ?? row?.id ?? null,
+    };
+  });
+};
+
+const persistBackups = async (items, insertedRows) => {
+  const backupRows = createBackupRows(items, insertedRows);
+  if (!backupRows.length) return null;
+
+  const { error } = await supabase
+    .from("Process_Flows_BACKUP")
+    .insert(backupRows);
+
+  return error || null;
+};
+
 
 module.exports = async (req, res) => {
   if (req.method === "GET") {
-    const { id } = req.query || {};
+    const { id, backup, originId } = req.query || {};
+
+    if (backup === "1") {
+      if (!originId) {
+        return res.status(400).json({ error: "Missing originId for backup query." });
+      }
+
+      const { data, error } = await supabase
+        .from("Process_Flows_BACKUP")
+        .select("id, created_at, nombre, subfuncion, creador, flow, fecha_guardado, ID_Origen")
+        .eq("ID_Origen", String(originId))
+        .order("id", { ascending: false });
+
+      if (error) {
+        return res.status(500).json({ error: error.message });
+      }
+
+      const normalizedBackups = Array.isArray(data)
+        ? data.map((item) => ({ ...item, flow: normalizeFlow(item.flow) }))
+        : [];
+
+      return res.status(200).json({ data: normalizedBackups });
+    }
+
     let query = supabase
       .from("Process_Flows")
       .select("id, created_at, nombre, subfuncion, creador, flow");
@@ -161,8 +216,8 @@ module.exports = async (req, res) => {
     }
 
     const normalizedData = Array.isArray(data)
-      ? data.map((item) => ({ ...item, flow: normalizeFlow(item.flow) }))
-      : { ...data, flow: normalizeFlow(data.flow) };
+      ? data.map((item) => normalizeFlowRecord(item))
+      : (data ? normalizeFlowRecord(data) : data);
 
     return res.status(200).json({ data: normalizedData });
   }
@@ -181,6 +236,7 @@ module.exports = async (req, res) => {
       subfuncion: item.subfuncion ?? null,
       creador: item.creador ?? null,
       flow: normalizeFlow(item.flow ?? item),
+      ID_Origen: item.ID_Origen ?? null,
     }));
 
     if (!items.length) {
@@ -189,14 +245,19 @@ module.exports = async (req, res) => {
 
     const { data, error } = await supabase
       .from("Process_Flows")
-      .insert(items)
+      .insert(items.map(({ ID_Origen, ...rest }) => rest))
       .select("id, created_at, nombre, subfuncion, creador, flow");
 
     if (error) {
       return res.status(500).json({ error: error.message });
     }
 
-    return res.status(201).json({ data });
+    const backupError = await persistBackups(items, data);
+    if (backupError) {
+      return res.status(500).json({ error: backupError.message });
+    }
+
+    return res.status(201).json({ data: Array.isArray(data) ? data.map((item) => normalizeFlowRecord(item)) : [] });
   }
 
   if (req.method === "PUT") {
@@ -247,7 +308,12 @@ module.exports = async (req, res) => {
       return res.status(500).json({ error: error.message });
     }
 
-    return res.status(200).json({ data: { ...data, flow: normalizeFlow(data.flow) } });
+    const backupError = await persistBackups([{ ...payload, ID_Origen: payload?.ID_Origen ?? id }], [data]);
+    if (backupError) {
+      return res.status(500).json({ error: backupError.message });
+    }
+
+    return res.status(200).json({ data: normalizeFlowRecord(data) });
   }
 
   if (req.method === "DELETE") {
