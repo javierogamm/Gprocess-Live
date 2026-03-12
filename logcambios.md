@@ -1,5 +1,11 @@
 # Historial de cambios
 
+## v1.1.69
+- Ajustado el guardado por defecto en BDD para proyectos activos abiertos: ahora propone **sobrescribir el proyecto activo** con confirmación explícita.
+- Si se cancela la sobrescritura, el flujo ofrece **Guardar copia** también con confirmación, manteniendo la copia como proyecto activo.
+- Se mantiene el historial/backup y la traza por `ID_Origen`, consolidando el comportamiento pedido para guardar/sobrescribir.
+- Consolidación de versión de la app en `1.1.69`.
+
 ## v1.1.68
 - Reforzado el guardado en BDD: al guardar un proyecto cargado/ya guardado queda preseleccionado para crear **Guardar copia** y la nueva copia pasa a ser el proyecto activo.
 - Implementada la protección de salida con cambios sin guardar (aviso al intentar salir/cambiar URL con `beforeunload`).

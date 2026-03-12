@@ -1342,8 +1342,11 @@ if (flowDbPrimaryAction) {
         }
 
         const payload = Engine.buildExportPayload();
+        const activeProject = flowDbActiveProjectId
+            ? flowDbItems.find((item) => String(item.id) === String(flowDbActiveProjectId))
+            : null;
 
-        try {
+        const saveAsCopy = async (baseProject) => {
             const response = await fetch("/api/process-flows", {
                 method: "POST",
                 headers: {
@@ -1352,25 +1355,86 @@ if (flowDbPrimaryAction) {
                 body: JSON.stringify({
                     nombre,
                     subfuncion: subfuncion || "Sin subfunción",
-                    creador: currentUser.name,
+                    creador: baseProject?.creador || currentUser.name,
+                    ID_Origen: baseProject?.ID_Origen || baseProject?.id,
                     flow: payload
                 })
             });
             const data = await response.json();
-
             if (!response.ok) {
-                throw new Error(data?.error || "Error al guardar el flujo.");
+                throw new Error(data?.error || "Error al guardar la copia del flujo.");
             }
 
-            if (Array.isArray(data?.data) && data.data.length) {
-                flowDbItems = [...flowDbItems, ...data.data];
-                const created = data.data[data.data.length - 1];
-                setActiveFlowProject(created);
+            const created = Array.isArray(data?.data) ? data.data[data.data.length - 1] : data?.data;
+            if (created) {
+                flowDbItems = [...flowDbItems, created];
                 flowDbSelectedId = created.id;
+                setActiveFlowProject(created);
                 buildSubfuncionesList(flowDbItems);
                 setActiveSubfuncion(normalizeSubfuncion(created.subfuncion || subfuncion || "Sin subfunción"));
             }
+        };
 
+        const overwriteActive = async (project) => {
+            const response = await fetch(`/api/process-flows?id=${encodeURIComponent(project.id)}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    nombre,
+                    subfuncion: subfuncion || "Sin subfunción",
+                    creador: project.creador,
+                    actor: currentUser?.name,
+                    ID_Origen: project.ID_Origen || project.id,
+                    flow: payload
+                })
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data?.error || "Error al sobrescribir el proyecto activo.");
+            }
+
+            if (data?.data) {
+                flowDbItems = flowDbItems.map((item) =>
+                    String(item.id) === String(project.id) ? data.data : item
+                );
+                flowDbSelectedId = data.data.id;
+                setActiveFlowProject(data.data);
+                buildSubfuncionesList(flowDbItems);
+                setActiveSubfuncion(normalizeSubfuncion(data.data.subfuncion || subfuncion || "Sin subfunción"));
+            }
+        };
+
+        try {
+            if (activeProject) {
+                if (canCurrentUserManageFlow(activeProject)) {
+                    const overwriteConfirmed = confirm(
+                        `El guardado por defecto sobrescribirá el proyecto activo "${activeProject.nombre || "Sin nombre"}". ¿Deseas continuar?`
+                    );
+
+                    if (overwriteConfirmed) {
+                        await overwriteActive(activeProject);
+                        markFlowDbSaved();
+                        closeFlowDbModal();
+                        alert("✅ Proyecto activo sobrescrito correctamente en la base de datos.");
+                        return;
+                    }
+                }
+
+                const copyConfirmed = confirm(
+                    `¿Deseas guardar una copia del proyecto activo "${activeProject.nombre || "Sin nombre"}"?`
+                );
+                if (!copyConfirmed) return;
+
+                await saveAsCopy(activeProject);
+                markFlowDbSaved();
+                closeFlowDbModal();
+                alert("✅ Copia guardada correctamente en la base de datos.");
+                return;
+            }
+
+            await saveAsCopy(null);
             markFlowDbSaved();
             closeFlowDbModal();
             alert("✅ Flujo guardado correctamente en la base de datos.");
