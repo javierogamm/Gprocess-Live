@@ -1,5 +1,11 @@
 # Historial de cambios
 
+## v1.1.71
+- Añadida persistencia de vinculación `SYNC` en `fichaProyecto` del flujo: al importar/cargar JSON se conserva, al limpiar flujo se reinicia y al vincular proyecto APP CODE se actualiza con el nuevo ID vinculado.
+- Incorporado indicador superior permanente con el texto **"Flow vinculado:"** y el nombre del proyecto APP CODE (o ID si no se puede resolver), cargado automáticamente al abrir un flujo con `SYNC`.
+- Añadida confirmación obligatoria al intentar vincular un proyecto APP CODE distinto cuando ya existe `SYNC`, sustituyendo explícitamente la vinculación anterior por la nueva.
+- Consolidación de versión de la app en `1.1.71`.
+
 ## v1.1.70
 - Ajustado el flujo de **Restaurar versión** para que haga un **nuevo guardado** (nueva fila) usando los datos de la versión seleccionada en historial (`nombre`, `subfuncion`, `creador`, `flow`).
 - Eliminada la semántica de “copia” en los mensajes de restauración: ahora refleja explícitamente que la restauración consolida un nuevo guardado y lo deja como proyecto activo.

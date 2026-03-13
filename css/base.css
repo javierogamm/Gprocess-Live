@@ -574,6 +574,23 @@ input {
     opacity: 0.80;
 }
 
+
+.flow-linked-info {
+  position: absolute;
+  top: 66px;
+  left: 20%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 4px 12px;
+  pointer-events: none;
+}
+
 /* Este es el modal popup de ver CSV */
 .modal {
     position: fixed;
