@@ -855,6 +855,7 @@ const linkCodeWizardNodeInfo = document.getElementById("linkCodeWizardNodeInfo")
 const linkCodeWizardTemplateSelect = document.getElementById("linkCodeWizardTemplateSelect");
 const linkCodeWizardSkip = document.getElementById("linkCodeWizardSkip");
 const linkCodeWizardApply = document.getElementById("linkCodeWizardApply");
+const flowLinkedInfo = document.getElementById("flowLinkedInfo");
 
 let flowDbItems = [];
 let flowDbMode = "load";
@@ -913,6 +914,47 @@ const canCurrentUserManageFlow = (item) => {
     const creatorName = normalizeUserName(item.creador);
     const currentName = normalizeUserName(currentUser?.name);
     return Boolean(creatorName) && creatorName === currentName;
+};
+
+
+const getFlowSyncId = () => {
+    const syncRaw = Engine?.fichaProyecto?.SYNC ?? Engine?.fichaProyecto?.sync ?? null;
+    if (syncRaw == null) return null;
+    if (typeof syncRaw === "object") {
+        const nested = syncRaw.id ?? syncRaw.flowId ?? syncRaw.projectId ?? null;
+        return nested == null ? null : String(nested);
+    }
+    const normalized = String(syncRaw).trim();
+    return normalized || null;
+};
+
+const updateFlowLinkedBadge = (projectName = "", syncId = null) => {
+    if (!flowLinkedInfo) return;
+    if (!syncId) {
+        flowLinkedInfo.textContent = "Flow vinculado: —";
+        return;
+    }
+
+    flowLinkedInfo.textContent = `Flow vinculado: ${projectName || `ID ${syncId}`}`;
+};
+
+const refreshLinkedFlowInfo = async () => {
+    const syncId = getFlowSyncId();
+    if (!syncId) {
+        updateFlowLinkedBadge("", null);
+        return;
+    }
+
+    try {
+        const response = await fetch("/api/code-markdowns");
+        const data = await response.json();
+        const projects = Array.isArray(data?.data) ? data.data : [];
+        const linkedProject = projects.find((item) => String(item?.id) === String(syncId));
+        updateFlowLinkedBadge(linkedProject?.proyecto || "", syncId);
+    } catch (error) {
+        console.error("Error obteniendo el flow vinculado:", error);
+        updateFlowLinkedBadge("", syncId);
+    }
 };
 
 const refreshFlowDbActionButtons = () => {
@@ -2068,9 +2110,18 @@ const renderLinkCodeWizardStep = () => {
         const refsFromProject = collectTesauroRefsFromProject(getSelectedLinkCodeAppItem());
         createdTesauros = ensureTesaurosFromReferences([...refsFromProject, ...refsFromMarkdown]);
 
+        const selectedProject = getSelectedLinkCodeAppItem();
+        const linkedId = selectedProject?.id != null ? String(selectedProject.id) : null;
+
+        if (window.Engine && Engine.fichaProyecto) {
+            Engine.fichaProyecto.SYNC = linkedId;
+        }
+
         if (applied.length) {
             Engine.saveHistory();
         }
+
+        window.dispatchEvent(new CustomEvent("flow:sync-change", { detail: { sync: linkedId } }));
 
         closeLinkCodeWizardModal();
         closeLinkCodeAppModal();
@@ -2126,6 +2177,15 @@ const startLinkCodeWizard = () => {
     if (!selectedProject) {
         alert("Selecciona un proyecto de APP CODE.");
         return;
+    }
+
+    const currentSyncId = getFlowSyncId();
+    const nextSyncId = selectedProject?.id != null ? String(selectedProject.id) : null;
+    if (currentSyncId && nextSyncId && currentSyncId !== nextSyncId) {
+        const confirmedReplace = confirm(
+            "Este flujo ya está vinculado a otro proyecto APP CODE. Si continúas, se sustituirá la vinculación y se actualizará el valor SYNC. ¿Deseas continuar?"
+        );
+        if (!confirmedReplace) return;
     }
 
     linkCodeWizardTemplates = getUniqueCodeAppTemplates(selectedProject.plantillas);
@@ -2228,7 +2288,9 @@ const importProjectFromCodeApp = () => {
     Engine.fichaProyecto = {
         ...(Engine.fichaProyecto || {}),
         procedimiento: selected.proyecto || "",
+        SYNC: selected?.id != null ? String(selected.id) : null
     };
+    window.dispatchEvent(new CustomEvent("flow:sync-change", { detail: { sync: Engine.fichaProyecto.SYNC } }));
 
     const titleDiv = document.getElementById("projectTitle");
     if (titleDiv) {
@@ -2299,6 +2361,14 @@ if (linkCodeWizardApply) {
 if (linkCodeWizardSkip) {
     linkCodeWizardSkip.addEventListener("click", skipLinkCodeWizardNode);
 }
+
+
+window.addEventListener("flow:sync-change", () => {
+    refreshLinkedFlowInfo();
+});
+
+refreshLinkedFlowInfo();
+
    
    /* ========================================================
    DRAG & DROP PARA CREAR NODOS DESDE EL PANEL IZQUIERDO

@@ -137,7 +137,8 @@ fichaProyecto: {
     procedimiento: "",
     actividad: "",
     descripcion: "",
-    entidad: ""      // ⭐ NUEVO
+    entidad: "",      // ⭐ NUEVO
+    SYNC: null
 },
 // TESAURO (colección de campos personalizados)
 tesauro: [],
@@ -309,11 +310,16 @@ importFromJSON(jsonString) {
             procedimiento: normalized.fichaProyecto?.procedimiento || "",
             actividad:     normalized.fichaProyecto?.actividad     || "",
             descripcion:   normalized.fichaProyecto?.descripcion   || "",
-            entidad:       normalized.fichaProyecto?.entidad       || ""
+            entidad:       normalized.fichaProyecto?.entidad       || "",
+            SYNC:          normalized.fichaProyecto?.SYNC
+                            || normalized.fichaProyecto?.sync
+                            || normalized.SYNC
+                            || null
         };
 
         const titleDiv = document.getElementById("projectTitle");
         if (titleDiv) titleDiv.innerText = this.fichaProyecto.procedimiento || "";
+        window.dispatchEvent(new CustomEvent("flow:sync-change", { detail: { sync: this.fichaProyecto.SYNC || null } }));
 
         // 2) Validación
         if (!normalized.nodos || !normalized.conexiones) {
@@ -681,8 +687,9 @@ alignSelectedNodes() {
         // 3️⃣ (Opcional) Limpiar panel de propiedades y ficha si procede
         if (window.UI && typeof UI.clearProperties === "function") UI.clearProperties();
         if (this.fichaProyecto) {
-          this.fichaProyecto = { procedimiento: "", actividad: "", descripcion: "" };
+          this.fichaProyecto = { procedimiento: "", actividad: "", descripcion: "", entidad: "", SYNC: null };
         }
+        window.dispatchEvent(new CustomEvent("flow:sync-change", { detail: { sync: null } }));
       
         console.log("✅ Engine.clearAll completado");
       },
