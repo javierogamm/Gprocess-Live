@@ -915,9 +915,16 @@ const canCurrentUserManageFlow = (item) => {
     return Boolean(creatorName) && creatorName === currentName;
 };
 
+const canCurrentUserOverwriteFlow = (item) => {
+    if (!item) return false;
+    const currentName = normalizeUserName(currentUser?.name);
+    return Boolean(currentName);
+};
+
 const refreshFlowDbActionButtons = () => {
     const selected = getSelectedFlowItem();
     const canManage = flowDbMode === "save" && canCurrentUserManageFlow(selected);
+    const canOverwrite = flowDbMode === "save" && canCurrentUserOverwriteFlow(selected);
 
     if (flowDbHistoryAction) {
         flowDbHistoryAction.style.display = flowDbMode === "load" && selected ? "inline-flex" : "none";
@@ -926,7 +933,7 @@ const refreshFlowDbActionButtons = () => {
 
     if (flowDbOverwriteAction) {
         flowDbOverwriteAction.style.display = flowDbMode === "save" ? "inline-flex" : "none";
-        flowDbOverwriteAction.disabled = !canManage;
+        flowDbOverwriteAction.disabled = !canOverwrite;
     }
 
     if (flowDbDeleteAction) {
@@ -968,7 +975,8 @@ const renderFlowHistoryList = () => {
 
         const savedAt = item.fecha_guardado || item.created_at;
         const stamp = savedAt ? new Date(savedAt).toLocaleString() : "Fecha desconocida";
-        row.innerHTML = `<h4>Versión #${item.id}</h4><p>${stamp} • Origen: ${item.ID_Origen || "-"}</p>`;
+        const changedBy = normalizeUserName(item.creador) || "Usuario desconocido";
+        row.innerHTML = `<h4>Versión #${item.id}</h4><p>${stamp} • Origen: ${item.ID_Origen || "-"} • Usuario: ${changedBy}</p>`;
         row.addEventListener("click", () => {
             flowDbSelectedBackupId = item.id;
             renderFlowHistoryList();
@@ -1408,7 +1416,7 @@ if (flowDbPrimaryAction) {
 
         try {
             if (activeProject) {
-                if (canCurrentUserManageFlow(activeProject)) {
+                if (canCurrentUserOverwriteFlow(activeProject)) {
                     const overwriteConfirmed = confirm(
                         `El guardado por defecto sobrescribirá el proyecto activo "${activeProject.nombre || "Sin nombre"}". ¿Deseas continuar?`
                     );
@@ -1452,8 +1460,8 @@ if (flowDbOverwriteAction) {
             alert("Selecciona un flujo para sobrescribir.");
             return;
         }
-        if (!canCurrentUserManageFlow(selected)) {
-            alert("Solo el creador del registro puede sobrescribir este flujo.");
+        if (!canCurrentUserOverwriteFlow(selected)) {
+            alert("Inicia sesión para sobrescribir este flujo.");
             return;
         }
 

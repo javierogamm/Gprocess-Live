@@ -1,5 +1,11 @@
 # Historial de cambios
 
+## v1.1.71
+- Permitida la sobrescritura en BDD por usuarios distintos al configurador original en el endpoint `PUT /api/process-flows`, manteniendo la exigencia de usuario actor autenticado.
+- Registrado el usuario que realiza el cambio en el historial de versiones reutilizando el campo `creador` del backup con el `actor` de la operación.
+- Actualizada la UI para habilitar sobrescritura a cualquier usuario logado y mostrar el usuario que hizo cada versión en el modal de historial.
+- Consolidación de versión de la app en `1.1.71`.
+
 ## v1.1.70
 - Ajustado el flujo de **Restaurar versión** para que haga un **nuevo guardado** (nueva fila) usando los datos de la versión seleccionada en historial (`nombre`, `subfuncion`, `creador`, `flow`).
 - Eliminada la semántica de “copia” en los mensajes de restauración: ahora refleja explícitamente que la restauración consolida un nuevo guardado y lo deja como proyecto activo.

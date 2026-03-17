@@ -154,7 +154,7 @@ const createBackupRows = (items, insertedRows = []) => {
       nombre: row?.nombre ?? source?.nombre ?? null,
       flow: normalizeFlow(row?.flow ?? source?.flow ?? source),
       subfuncion: row?.subfuncion ?? source?.subfuncion ?? null,
-      creador: row?.creador ?? source?.creador ?? null,
+      creador: source?.actor ?? row?.creador ?? source?.creador ?? null,
       fecha_guardado: nowIso,
       ID_Origen: source?.ID_Origen ?? row?.ID_Origen ?? row?.id ?? null,
     };
@@ -285,15 +285,14 @@ module.exports = async (req, res) => {
       return res.status(404).json({ error: "Flow not found." });
     }
 
-    const creator = typeof existing?.creador === "string" ? existing.creador.trim() : "";
-    if (!creator || !actor || creator !== actor) {
-      return res.status(403).json({ error: "Only the creator can overwrite this flow." });
+    if (!actor) {
+      return res.status(403).json({ error: "A valid actor is required to overwrite this flow." });
     }
 
     const updateData = {
       nombre: payload?.nombre ?? null,
       subfuncion: payload?.subfuncion ?? null,
-      creador: payload?.creador ?? existing.creador ?? null,
+      creador: existing.creador ?? payload?.creador ?? null,
       flow: normalizeFlow(payload?.flow ?? payload),
     };
 
