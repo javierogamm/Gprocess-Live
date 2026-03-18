@@ -133,7 +133,7 @@ desc.addEventListener("input", () => {
     Engine.updateConnections();
 });
 
-if (nodo.tipo === "formulario" || nodo.tipo === "documento") {
+if (["formulario", "documento", "circuito"].includes(String(nodo.tipo || "").toLowerCase())) {
     const templateBtn = document.createElement("button");
     templateBtn.className = "node-template-trigger";
     templateBtn.type = "button";

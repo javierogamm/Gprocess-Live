@@ -1939,7 +1939,7 @@ const getEligibleTemplateNodes = () => {
             ? Engine.nodos
             : (Array.isArray(Engine?.nodes) ? Engine.nodes : []));
 
-    return nodes.filter((node) => ["formulario", "documento"].includes(String(node?.tipo || "").toLowerCase()));
+    return nodes.filter((node) => ["formulario", "documento", "circuito"].includes(String(node?.tipo || "").toLowerCase()));
 };
 
 const collectTesauroRefsFromProject = (project) => {
@@ -2144,7 +2144,7 @@ const startLinkCodeWizard = () => {
 
     linkCodeWizardNodes = getEligibleTemplateNodes();
     if (!linkCodeWizardNodes.length) {
-        alert("No hay nodos de tipo Formulario o Documento en el flujo actual.");
+        alert("No hay nodos de tipo Formulario, Documento o CR en el flujo actual.");
         return;
     }
 
@@ -3076,7 +3076,7 @@ showConnectionProperties(connId) {
 
 isTemplateCompatibleNode(nodo) {
     if (!nodo) return false;
-    return nodo.tipo === "formulario" || nodo.tipo === "documento";
+    return ["formulario", "documento", "circuito"].includes(String(nodo.tipo || "").toLowerCase());
 },
 
 refreshTemplateNodeButton(nodo) {

@@ -1,5 +1,16 @@
 # Historial de cambios
 
+## v1.1.73
+- Ajustada la exportación CSV RPA para que los nodos **CR / circuito** y **subproceso** se exporten como tareas **Libre**.
+- Corregida la columna **Texto plantilla** en el CSV RPA para ignorar la plantilla en tareas libres, evitando exportarla en nodos CR y subproceso.
+- Consolidación de versión de la app en `1.1.73`.
+
+## v1.1.72
+- Habilitada la configuración de plantilla también en nodos de tipo **CR / circuito**, tanto desde el botón del nodo como desde el panel lateral de propiedades.
+- Extendida la vinculación guiada con APP CODE para incluir nodos CR como destinos elegibles de plantillas, ajustando mensajes y validaciones del flujo.
+- Actualizada la exportación CSV para reflejar también la plantilla configurada en nodos CR dentro de la columna **Texto plantilla**.
+- Consolidación de versión de la app en `1.1.72`.
+
 ## v1.1.71
 - Permitida la sobrescritura en BDD por usuarios distintos al configurador original en el endpoint `PUT /api/process-flows`, manteniendo la exigencia de usuario actor autenticado.
 - Registrado el usuario que realiza el cambio en el historial de versiones reutilizando el campo `creador` del backup con el `actor` de la operación.
