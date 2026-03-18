@@ -810,6 +810,8 @@ window.addEventListener("flow:dirty-change", (event) => {
     markFlowDbDirty(Boolean(event?.detail?.dirty));
 });
 
+const btnQuickSave = document.getElementById("btnQuickSave");
+const btnQuickReload = document.getElementById("btnQuickReload");
 const btnSaveJSONDb = document.getElementById("btnSaveJSONDb");
 const btnLoadJSONDb = document.getElementById("btnLoadJSONDb");
 const flowDbModal = document.getElementById("flowDbModal");
@@ -903,6 +905,146 @@ const markFlowDbSaved = () => {
 const setActiveFlowProject = (item) => {
     const projectId = item?.id ?? item?.ID_Origen ?? null;
     flowDbActiveProjectId = projectId ? String(projectId) : null;
+};
+
+const saveFlowToDb = async ({ nombre, subfuncion, baseProject = null, overwrite = false, actor = currentUser?.name } = {}) => {
+    const payload = Engine.buildExportPayload();
+    const normalizedName = typeof nombre === "string" ? nombre.trim() : "";
+    const normalizedSubfuncion = (typeof subfuncion === "string" && subfuncion.trim()) ? subfuncion.trim() : "Sin subfunción";
+
+    if (!normalizedName) {
+        throw new Error("Indica un nombre para guardar el flujo.");
+    }
+
+    if (overwrite) {
+        if (!baseProject?.id) {
+            throw new Error("No hay proyecto activo para sobrescribir.");
+        }
+
+        const response = await fetch(`/api/process-flows?id=${encodeURIComponent(baseProject.id)}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                nombre: normalizedName,
+                subfuncion: normalizedSubfuncion,
+                creador: baseProject.creador,
+                actor,
+                ID_Origen: baseProject.ID_Origen || baseProject.id,
+                flow: payload
+            })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data?.error || "Error al sobrescribir el proyecto activo.");
+        }
+
+        if (data?.data) {
+            flowDbItems = flowDbItems.map((item) =>
+                String(item.id) === String(baseProject.id) ? data.data : item
+            );
+            flowDbSelectedId = data.data.id;
+            setActiveFlowProject(data.data);
+        }
+
+        return data?.data || null;
+    }
+
+    const response = await fetch("/api/process-flows", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            nombre: normalizedName,
+            subfuncion: normalizedSubfuncion,
+            creador: baseProject?.creador || currentUser?.name,
+            actor,
+            ID_Origen: baseProject?.ID_Origen || baseProject?.id,
+            flow: payload
+        })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data?.error || "Error al guardar el flujo.");
+    }
+
+    const created = Array.isArray(data?.data) ? data.data[data.data.length - 1] : data?.data;
+    if (created) {
+        if (!flowDbItems.some((item) => String(item.id) === String(created.id))) {
+            flowDbItems = [...flowDbItems, created];
+        }
+        flowDbSelectedId = created.id;
+        setActiveFlowProject(created);
+    }
+    return created || null;
+};
+
+const quickSaveActiveFlow = async () => {
+    if (!currentUser?.name) {
+        alert("Inicia sesión para guardar en base de datos.");
+        openUserModal("login");
+        return;
+    }
+
+    const activeProject = flowDbActiveProjectId
+        ? flowDbItems.find((item) => String(item.id) === String(flowDbActiveProjectId))
+        : null;
+
+    if (!activeProject) {
+        alert("No hay un proyecto activo en BDD para sobrescribir. Usa 'Guardar en BDD' al menos una vez para crear o seleccionar uno.");
+        return;
+    }
+
+    try {
+        const saved = await saveFlowToDb({
+            nombre: activeProject.nombre || Engine.fichaProyecto?.procedimiento || "Sin nombre",
+            subfuncion: activeProject.subfuncion || "Sin subfunción",
+            baseProject: activeProject,
+            overwrite: true,
+            actor: currentUser?.name
+        });
+
+        if (saved) {
+            buildSubfuncionesList(flowDbItems);
+            markFlowDbSaved();
+            alert("✅ Proyecto activo guardado correctamente.");
+        }
+    } catch (error) {
+        console.error("Error en guardado rápido:", error);
+        alert(`❌ ${error.message || "No se pudo guardar el proyecto activo."}`);
+    }
+};
+
+const reloadActiveFlow = async () => {
+    if (flowDbDirty) {
+        const confirmed = confirm("Hay cambios sin guardar. ¿Quieres recargar igualmente el proyecto activo?");
+        if (!confirmed) return;
+    }
+
+    const activeProject = flowDbActiveProjectId
+        ? flowDbItems.find((item) => String(item.id) === String(flowDbActiveProjectId))
+        : null;
+
+    if (!activeProject) {
+        window.location.reload();
+        return;
+    }
+
+    try {
+        let flowData = activeProject.flow;
+        if (typeof flowData === "string") {
+            flowData = JSON.parse(flowData);
+        }
+        Engine.importFromJSON(JSON.stringify(flowData));
+        setActiveFlowProject(activeProject);
+        markFlowDbSaved();
+    } catch (error) {
+        console.error("Error recargando proyecto activo:", error);
+        alert("❌ No se pudo recargar el proyecto activo. Se recargará la aplicación completa.");
+        window.location.reload();
+    }
 };
 
 const getSelectedFlowItem = () =>
@@ -1212,6 +1354,14 @@ if (btnLoadJSONDb) {
     });
 }
 
+if (btnQuickSave) {
+    btnQuickSave.addEventListener("click", quickSaveActiveFlow);
+}
+
+if (btnQuickReload) {
+    btnQuickReload.addEventListener("click", reloadActiveFlow);
+}
+
 if (flowDbClose && flowDbModal) {
     flowDbClose.addEventListener("click", closeFlowDbModal);
 }
@@ -1349,70 +1499,9 @@ if (flowDbPrimaryAction) {
             return;
         }
 
-        const payload = Engine.buildExportPayload();
         const activeProject = flowDbActiveProjectId
             ? flowDbItems.find((item) => String(item.id) === String(flowDbActiveProjectId))
             : null;
-
-        const saveAsCopy = async (baseProject) => {
-            const response = await fetch("/api/process-flows", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    nombre,
-                    subfuncion: subfuncion || "Sin subfunción",
-                    creador: baseProject?.creador || currentUser.name,
-                    ID_Origen: baseProject?.ID_Origen || baseProject?.id,
-                    flow: payload
-                })
-            });
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data?.error || "Error al guardar la copia del flujo.");
-            }
-
-            const created = Array.isArray(data?.data) ? data.data[data.data.length - 1] : data?.data;
-            if (created) {
-                flowDbItems = [...flowDbItems, created];
-                flowDbSelectedId = created.id;
-                setActiveFlowProject(created);
-                buildSubfuncionesList(flowDbItems);
-                setActiveSubfuncion(normalizeSubfuncion(created.subfuncion || subfuncion || "Sin subfunción"));
-            }
-        };
-
-        const overwriteActive = async (project) => {
-            const response = await fetch(`/api/process-flows?id=${encodeURIComponent(project.id)}`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    nombre,
-                    subfuncion: subfuncion || "Sin subfunción",
-                    creador: project.creador,
-                    actor: currentUser?.name,
-                    ID_Origen: project.ID_Origen || project.id,
-                    flow: payload
-                })
-            });
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data?.error || "Error al sobrescribir el proyecto activo.");
-            }
-
-            if (data?.data) {
-                flowDbItems = flowDbItems.map((item) =>
-                    String(item.id) === String(project.id) ? data.data : item
-                );
-                flowDbSelectedId = data.data.id;
-                setActiveFlowProject(data.data);
-                buildSubfuncionesList(flowDbItems);
-                setActiveSubfuncion(normalizeSubfuncion(data.data.subfuncion || subfuncion || "Sin subfunción"));
-            }
-        };
 
         try {
             if (activeProject) {
@@ -1422,7 +1511,9 @@ if (flowDbPrimaryAction) {
                     );
 
                     if (overwriteConfirmed) {
-                        await overwriteActive(activeProject);
+                        await saveFlowToDb({ nombre, subfuncion, baseProject: activeProject, overwrite: true, actor: currentUser?.name });
+                        buildSubfuncionesList(flowDbItems);
+                        setActiveSubfuncion(normalizeSubfuncion(activeProject.subfuncion || subfuncion || "Sin subfunción"));
                         markFlowDbSaved();
                         closeFlowDbModal();
                         alert("✅ Proyecto activo sobrescrito correctamente en la base de datos.");
@@ -1435,14 +1526,18 @@ if (flowDbPrimaryAction) {
                 );
                 if (!copyConfirmed) return;
 
-                await saveAsCopy(activeProject);
+                const createdCopy = await saveFlowToDb({ nombre, subfuncion, baseProject: activeProject, overwrite: false, actor: currentUser?.name });
+                buildSubfuncionesList(flowDbItems);
+                setActiveSubfuncion(normalizeSubfuncion(createdCopy?.subfuncion || subfuncion || "Sin subfunción"));
                 markFlowDbSaved();
                 closeFlowDbModal();
                 alert("✅ Copia guardada correctamente en la base de datos.");
                 return;
             }
 
-            await saveAsCopy(null);
+            const createdFlow = await saveFlowToDb({ nombre, subfuncion, baseProject: null, overwrite: false, actor: currentUser?.name });
+            buildSubfuncionesList(flowDbItems);
+            setActiveSubfuncion(normalizeSubfuncion(createdFlow?.subfuncion || subfuncion || "Sin subfunción"));
             markFlowDbSaved();
             closeFlowDbModal();
             alert("✅ Flujo guardado correctamente en la base de datos.");
@@ -1478,34 +1573,10 @@ if (flowDbOverwriteAction) {
         if (!confirmed) return;
 
         try {
-            const response = await fetch("/api/process-flows", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    nombre,
-                    subfuncion: subfuncion || "Sin subfunción",
-                    creador: selected.creador,
-                    actor: currentUser?.name,
-                    ID_Origen: selected.ID_Origen || selected.id,
-                    flow: Engine.buildExportPayload()
-                })
-            });
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data?.error || "Error al guardar la copia del flujo.");
-            }
-
-            const createdCopy = Array.isArray(data?.data) ? data.data[data.data.length - 1] : data?.data;
-            if (createdCopy) {
-                flowDbItems = [...flowDbItems, createdCopy];
-                buildSubfuncionesList(flowDbItems);
-                setActiveSubfuncion(normalizeSubfuncion(createdCopy.subfuncion || subfuncion || "Sin subfunción"));
-                flowDbSelectedId = createdCopy.id;
-                setActiveFlowProject(createdCopy);
-                renderFlowList();
-            }
+            const createdCopy = await saveFlowToDb({ nombre, subfuncion, baseProject: selected, overwrite: false, actor: currentUser?.name });
+            buildSubfuncionesList(flowDbItems);
+            setActiveSubfuncion(normalizeSubfuncion(createdCopy?.subfuncion || subfuncion || "Sin subfunción"));
+            renderFlowList();
 
             markFlowDbSaved();
             closeFlowDbModal();

@@ -1,5 +1,11 @@
 # Historial de cambios
 
+## v1.1.74
+- Añadidos dos botones flotantes junto a **Asignaciones**: uno de guardado rápido (solo icono de disco) que sobrescribe directamente el proyecto activo en BDD sin abrir modal, y otro de recarga rápida del proyecto.
+- La recarga rápida ahora pregunta confirmación cuando hay cambios sin guardar y, si existe proyecto activo en BDD, vuelve a cargar ese flujo automáticamente; en caso contrario recarga la aplicación completa.
+- Reposicionado el minimapa inicial más hacia el centro de la pantalla para que arranque menos pegado al borde derecho.
+- Consolidación de versión de la app en `1.1.74`.
+
 ## v1.1.73
 - Ajustada la exportación CSV RPA para que los nodos **CR / circuito** y **subproceso** se exporten como tareas **Libre**.
 - Corregida la columna **Texto plantilla** en el CSV RPA para ignorar la plantilla en tareas libres, evitando exportarla en nodos CR y subproceso.

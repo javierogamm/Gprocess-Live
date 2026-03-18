@@ -1093,10 +1093,11 @@ input {
   transition: stroke 0.2s ease;
 }
 /* 🔘 Botón flotante */
+.floating-save-btn,
+.floating-reload-btn,
 .floating-assign-btn {
   position: fixed;
   top: 15px;
-  right:80px;
   z-index: 2000;
   background: #E34850;
   color: white;
@@ -1108,6 +1109,11 @@ input {
   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
   transition: all 0.3s ease;
 }
+.floating-save-btn { right: 292px; min-width: 48px; padding: 10px 12px; }
+.floating-reload-btn { right: 236px; min-width: 48px; padding: 10px 12px; }
+.floating-assign-btn { right: 80px; }
+.floating-save-btn:hover,
+.floating-reload-btn:hover,
 .floating-assign-btn:hover {
   background: #c63c45;
 }
@@ -1290,7 +1296,7 @@ input {
 
 .minimap-window {
   position: fixed;
-  right: 80px;
+  right: 180px;
   bottom: 20px;
   top: auto;
   width: 300px;
