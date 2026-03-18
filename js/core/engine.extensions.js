@@ -170,18 +170,19 @@ Engine.exportFlujoCSV = function() {
 
     const tareasRows = sortedNodes.map((n) => {
         let tipoTarea = n.tipo.toLowerCase();
-        if (tipoTarea === "circuito" || tipoTarea === "subproceso") tipoTarea = "Libre";
+        if (["circuito", "subproceso", "operacion_externa"].includes(tipoTarea)) tipoTarea = "Libre";
         else if (tipoTarea === "decisión" || tipoTarea === "decision") tipoTarea = "Formulario";
         else tipoTarea = capitalizeFirst(tipoTarea);
     
         // ⭐ Concatenar múltiples asignaciones con " -- "
-        const grupos = n.asignadosGrupos || [];
-        const usuarios = n.asignadosUsuarios || [];
+        const grupos = Array.isArray(n.asignadosGrupos) ? n.asignadosGrupos : [];
+        const usuarios = Array.isArray(n.asignadosUsuarios) ? n.asignadosUsuarios : [];
 
         const asignadosTexto = grupos.join(" -- ");
-        const esUnidadGestora = grupos.some(g => g.toLowerCase() === "unidad gestora");
+        const esUnidadGestora = grupos.some(g => String(g || "").trim().toLowerCase() === "unidad gestora");
+        const tieneAsignacion = grupos.length > 0 || usuarios.length > 0;
         const asignadoGrupo = esUnidadGestora ? "" : asignadosTexto;
-        const asignadoUG = esUnidadGestora ? "Sí" : "No";
+        const asignadoUG = esUnidadGestora || !tieneAsignacion ? "Sí" : "No";
         const asignadoUsuario = usuarios.join(" -- ");
         const inicioManual = n.tareaManual ? "Sí" : "No";
     
