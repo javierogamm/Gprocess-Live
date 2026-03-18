@@ -1,5 +1,10 @@
 # Historial de cambios
 
+## v1.1.75
+- Ajustada la exportación completa a CSV para que las tareas de tipo **operación externa** se informen como **Libre**, alineándolas con el comportamiento ya existente de los **subprocesos**.
+- Corregida la columna **Asignado a unidad gestora** del CSV para informar **Sí** cuando un nodo no tiene ninguna asignación, además de cuando está asignado explícitamente a la unidad gestora.
+- Consolidación de versión de la app en `1.1.75`.
+
 ## v1.1.74
 - Añadidos dos botones flotantes junto a **Asignaciones**: uno de guardado rápido (solo icono de disco) que sobrescribe directamente el proyecto activo en BDD sin abrir modal, y otro de recarga rápida del proyecto.
 - La recarga rápida ahora pregunta confirmación cuando hay cambios sin guardar y, si existe proyecto activo en BDD, vuelve a cargar ese flujo automáticamente; en caso contrario recarga la aplicación completa.
