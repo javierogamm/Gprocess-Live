@@ -1,5 +1,11 @@
 # Historial de cambios
 
+## v1.1.76
+- El botón flotante de **recarga** ahora vuelve a consultar el proyecto activo directamente en BDD antes de importarlo de nuevo en el canvas, evitando reutilizar una copia local desactualizada.
+- Reubicado el título del procedimiento en una franja superior independiente y centrada sobre el canvas para que no se superponga a los nodos del diagrama.
+- Rediseñada la forma visual del nodo **Operación Externa** con una tarjeta redondeada y acentos internos más limpios, sustituyendo la apariencia anterior tipo cilindro.
+- Consolidación de versión de la app en `1.1.76`.
+
 ## v1.1.75
 - Ajustada la exportación completa a CSV para que las tareas de tipo **operación externa** se informen como **Libre**, alineándolas con el comportamiento ya existente de los **subprocesos**.
 - Corregida la columna **Asignado a unidad gestora** del CSV para informar **Sí** cuando un nodo no tiene ninguna asignación, además de cuando está asignado explícitamente a la unidad gestora.
