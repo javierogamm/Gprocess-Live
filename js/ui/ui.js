@@ -1019,7 +1019,7 @@ const quickSaveActiveFlow = async () => {
 
 const reloadActiveFlow = async () => {
     if (flowDbDirty) {
-        const confirmed = confirm("Hay cambios sin guardar. ¿Quieres recargar igualmente el proyecto activo?");
+        const confirmed = confirm("Hay cambios sin guardar. ¿Quieres recargar igualmente el proyecto activo desde BDD?");
         if (!confirmed) return;
     }
 
@@ -1027,23 +1027,43 @@ const reloadActiveFlow = async () => {
         ? flowDbItems.find((item) => String(item.id) === String(flowDbActiveProjectId))
         : null;
 
-    if (!activeProject) {
+    if (!activeProject?.id) {
         window.location.reload();
         return;
     }
 
     try {
-        let flowData = activeProject.flow;
+        const response = await fetch(`/api/process-flows?id=${encodeURIComponent(activeProject.id)}`);
+        const payload = await response.json();
+        if (!response.ok) {
+            throw new Error(payload?.error || "No se pudo recargar el proyecto activo desde BDD.");
+        }
+
+        const freshProject = payload?.data || null;
+        if (!freshProject?.flow) {
+            throw new Error("La respuesta de BDD no incluye el flujo solicitado.");
+        }
+
+        let flowData = freshProject.flow;
         if (typeof flowData === "string") {
             flowData = JSON.parse(flowData);
         }
+
+        flowDbItems = flowDbItems.map((item) =>
+            String(item.id) === String(freshProject.id) ? freshProject : item
+        );
+        if (!flowDbItems.some((item) => String(item.id) === String(freshProject.id))) {
+            flowDbItems.push(freshProject);
+        }
+
         Engine.importFromJSON(JSON.stringify(flowData));
-        setActiveFlowProject(activeProject);
+        flowDbSelectedId = freshProject.id;
+        setActiveFlowProject(freshProject);
         markFlowDbSaved();
+        alert("✅ Proyecto recargado desde BDD.");
     } catch (error) {
-        console.error("Error recargando proyecto activo:", error);
-        alert("❌ No se pudo recargar el proyecto activo. Se recargará la aplicación completa.");
-        window.location.reload();
+        console.error("Error recargando proyecto activo desde BDD:", error);
+        alert(`❌ ${error.message || "No se pudo recargar el proyecto activo desde BDD."}`);
     }
 };
 

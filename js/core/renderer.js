@@ -448,44 +448,54 @@ if (nodo.tipo === "decisionR") {
    OPERACIÓN EXTERNA → cilindro tipo base de datos
 ==================================================== */
 if (nodo.tipo === "operacion_externa") {
-    const fx = W / 220;
-    const fy = H / 140;
+    const outer = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    outer.setAttribute("x", 6);
+    outer.setAttribute("y", 8);
+    outer.setAttribute("width", Math.max(W - 12, 24));
+    outer.setAttribute("height", Math.max(H - 16, 24));
+    outer.setAttribute("rx", Math.max(Math.min(W, H) * 0.2, 18));
+    outer.setAttribute("ry", Math.max(Math.min(W, H) * 0.2, 18));
+    outer.setAttribute("fill", fillBase);
+    outer.setAttribute("stroke", strokeBase);
+    outer.setAttribute("stroke-width", strokeWidth);
+    g.appendChild(outer);
 
-    // 🟣 Cuerpo principal (rectángulo con bordes curvos)
-    const body = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    body.setAttribute("x", 10 * fx);
-    body.setAttribute("y", 20 * fy);
-    body.setAttribute("width", 200 * fx);
-    body.setAttribute("height", 100 * fy);
-    const cylinderRadius = Math.min(W, H) * 0.12;
-    body.setAttribute("fill", fillBase);
-    body.setAttribute("stroke", strokeBase);
-    body.setAttribute("stroke-width", strokeWidth);
-    body.setAttribute("rx", cylinderRadius);
-    body.setAttribute("ry", cylinderRadius);
-    g.appendChild(body);
+    const header = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    header.setAttribute("x", 12);
+    header.setAttribute("y", 12);
+    header.setAttribute("width", Math.max(W - 24, 18));
+    header.setAttribute("height", Math.max(Math.min(H * 0.25, 26), 18));
+    header.setAttribute("rx", 14);
+    header.setAttribute("ry", 14);
+    header.setAttribute("fill", strokeAccent);
+    header.setAttribute("fill-opacity", "0.16");
+    header.setAttribute("stroke", strokeAccent);
+    header.setAttribute("stroke-opacity", "0.45");
+    header.setAttribute("stroke-width", Math.max(strokeWidth - 0.4, 1));
+    g.appendChild(header);
 
-    // 🔵 Elipse superior
-    const topEllipse = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
-    topEllipse.setAttribute("cx", 110 * fx);
-    topEllipse.setAttribute("cy", 20 * fy);
-    topEllipse.setAttribute("rx", 100 * fx);
-    topEllipse.setAttribute("ry", 20 * fy);
-    topEllipse.setAttribute("fill", fillBase);
-    topEllipse.setAttribute("stroke", strokeBase);
-    topEllipse.setAttribute("stroke-width", strokeWidth);
-    g.appendChild(topEllipse);
+    const divider = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    divider.setAttribute("x1", 18);
+    divider.setAttribute("y1", Math.max(Math.min(H * 0.34, 32), 24));
+    divider.setAttribute("x2", Math.max(W - 18, 18));
+    divider.setAttribute("y2", Math.max(Math.min(H * 0.34, 32), 24));
+    divider.setAttribute("stroke", strokeAccent);
+    divider.setAttribute("stroke-opacity", "0.35");
+    divider.setAttribute("stroke-width", Math.max(strokeWidth - 0.5, 1));
+    g.appendChild(divider);
 
-    // 🔵 Elipse inferior (solo contorno)
-    const bottomEllipse = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
-    bottomEllipse.setAttribute("cx", 110 * fx);
-    bottomEllipse.setAttribute("cy", 120 * fy);
-    bottomEllipse.setAttribute("rx", 100 * fx);
-    bottomEllipse.setAttribute("ry", 20 * fy);
-    bottomEllipse.setAttribute("fill", nodo.color || "none");
-    bottomEllipse.setAttribute("stroke", strokeAccent);
-    bottomEllipse.setAttribute("stroke-width", strokeWidth);
-    g.appendChild(bottomEllipse);
+    const footerArc = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    const footerY = Math.max(H - 18, 24);
+    footerArc.setAttribute(
+        "d",
+        `M 20 ${footerY} Q ${W / 2} ${Math.max(H - 4, footerY)} ${Math.max(W - 20, 20)} ${footerY}`
+    );
+    footerArc.setAttribute("fill", "none");
+    footerArc.setAttribute("stroke", strokeAccent);
+    footerArc.setAttribute("stroke-opacity", "0.65");
+    footerArc.setAttribute("stroke-width", Math.max(strokeWidth - 0.2, 1.1));
+    footerArc.setAttribute("stroke-linecap", "round");
+    g.appendChild(footerArc);
 }
 
         /* ====================================================
