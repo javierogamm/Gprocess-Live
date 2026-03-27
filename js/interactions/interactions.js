@@ -473,6 +473,8 @@ if (this.draggingNode) {
             if (pos) {
                 conn[this.reconnectEnd] = nodeId;
                 conn[this.reconnectEnd + "Pos"] = pos;
+                delete conn.manualBasePoints;
+                delete conn.manualAnchors;
                 Engine.saveHistory();
             }
         }
@@ -536,6 +538,8 @@ tryCompleteReconnect(e) {
             // Actualizar el extremo reconectado
             conn[this.reconnectEnd] = nodeId;
             conn[this.reconnectEnd + "Pos"] = pos;
+            delete conn.manualBasePoints;
+            delete conn.manualAnchors;
             Renderer.redrawConnections();
             Engine.saveHistory();
         } else {

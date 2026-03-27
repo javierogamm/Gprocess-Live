@@ -1013,6 +1013,104 @@ redrawConnectionsDynamic(conn, fixedX, fixedY, mx, my, movingEnd) {
         }
         return pts;
     },
+    pointsToPath(points = []) {
+        if (!Array.isArray(points) || points.length === 0) return "";
+        let d = `M ${points[0].x} ${points[0].y}`;
+        for (let i = 1; i < points.length; i++) {
+            d += ` L ${points[i].x} ${points[i].y}`;
+        }
+        return d;
+    },
+    simplifyOrthogonalPoints(points = []) {
+        if (!Array.isArray(points) || points.length < 2) return points;
+        const normalized = points.map((p) => ({
+            x: Math.round(p.x),
+            y: Math.round(p.y)
+        }));
+
+        const cleaned = [normalized[0]];
+        for (let i = 1; i < normalized.length; i++) {
+            const prev = cleaned[cleaned.length - 1];
+            const cur = normalized[i];
+            if (prev.x === cur.x && prev.y === cur.y) continue;
+            cleaned.push(cur);
+        }
+
+        if (cleaned.length < 3) return cleaned;
+
+        const simplified = [cleaned[0]];
+        for (let i = 1; i < cleaned.length - 1; i++) {
+            const a = simplified[simplified.length - 1];
+            const b = cleaned[i];
+            const c = cleaned[i + 1];
+            const colinear = (a.x === b.x && b.x === c.x) || (a.y === b.y && b.y === c.y);
+            if (!colinear) simplified.push(b);
+        }
+        simplified.push(cleaned[cleaned.length - 1]);
+        return simplified;
+    },
+    forceOrthogonalPoints(points = []) {
+        if (!Array.isArray(points) || points.length < 2) return points;
+        const fixed = points.map((p) => ({ x: p.x, y: p.y }));
+        for (let i = 1; i < fixed.length; i++) {
+            const prev = fixed[i - 1];
+            const cur = fixed[i];
+            if (prev.x !== cur.x && prev.y !== cur.y) {
+                const dx = Math.abs(cur.x - prev.x);
+                const dy = Math.abs(cur.y - prev.y);
+                if (dx >= dy) cur.y = prev.y;
+                else cur.x = prev.x;
+            }
+        }
+        return this.simplifyOrthogonalPoints(fixed);
+    },
+    resolveConnectionPathPoints(conn, from, adjustedTo) {
+        const hasManualRoute = Array.isArray(conn.manualBasePoints)
+            && conn.manualBasePoints.length >= 2
+            && conn.manualAnchors?.from
+            && conn.manualAnchors?.to;
+
+        if (!hasManualRoute) {
+            const autoD = this.generateOrthogonalPath(from, adjustedTo, conn.fromPos, conn.toPos);
+            return this.parsePoints(autoD);
+        }
+
+        const base = conn.manualBasePoints.map(p => ({ x: p.x, y: p.y }));
+        const firstIndex = 0;
+        const lastIndex = base.length - 1;
+        const fromAnchor = conn.manualAnchors.from;
+        const toAnchor = conn.manualAnchors.to;
+        const deltaFrom = { x: from.x - fromAnchor.x, y: from.y - fromAnchor.y };
+        const deltaTo = { x: adjustedTo.x - toAnchor.x, y: adjustedTo.y - toAnchor.y };
+
+        // Desplazamiento promedio para mantener la forma global sin deformaciones raras.
+        const deltaAvg = {
+            x: (deltaFrom.x + deltaTo.x) / 2,
+            y: (deltaFrom.y + deltaTo.y) / 2
+        };
+
+        const transformed = base.map((point) => ({
+            x: point.x + deltaAvg.x,
+            y: point.y + deltaAvg.y
+        }));
+
+        transformed[firstIndex] = { x: from.x, y: from.y };
+        transformed[lastIndex] = { x: adjustedTo.x, y: adjustedTo.y };
+
+        // Mantener ortogonalidad en los tramos pegados a los nodos.
+        if (transformed.length > 2) {
+            const firstLegBase = base[1];
+            if (firstLegBase.x === base[0].x) transformed[1].x = from.x;
+            else transformed[1].y = from.y;
+
+            const beforeLastIdx = transformed.length - 2;
+            const lastLegBase = base[beforeLastIdx];
+            if (lastLegBase.x === base[lastIndex].x) transformed[beforeLastIdx].x = adjustedTo.x;
+            else transformed[beforeLastIdx].y = adjustedTo.y;
+        }
+
+        return this.forceOrthogonalPoints(transformed);
+    },
     /* =======================================================
        DIBUJAR CONEXIÓN
     ======================================================== */
@@ -1039,7 +1137,8 @@ redrawConnectionsDynamic(conn, fixedX, fixedY, mx, my, movingEnd) {
         // =============================
         // 📐 Path principal (línea)
         // =============================
-    const d = this.generateOrthogonalPath(from, adjustedTo, conn.fromPos, conn.toPos);
+    const points = this.resolveConnectionPathPoints(conn, from, adjustedTo);
+    const d = this.pointsToPath(points);
     
         // =============================
         // 🎯 Crear marcador de flecha (una sola vez)
@@ -1562,7 +1661,7 @@ Renderer.LineEditor = {
         this.isDragging = true;
         this.dragIndex = segIndex;
     
-        const conn = this.activeConn;
+    const conn = this.activeConn;
         const pathEl = Renderer.svg.querySelector(`#${conn.id}`);
         if (!pathEl) return;
     
@@ -1615,6 +1714,7 @@ this.updateHandles(pts);        };
             window.removeEventListener("mousemove", onMove);
             window.removeEventListener("mouseup", onUp);
 
+            this.persistManualRoute(conn, pts);
             Engine.saveHistory();
             Renderer.LineEditor.show(conn); // 🔄 refrescar handles después del movimiento
         };
@@ -1674,6 +1774,30 @@ this.updateHandles(pts);        };
             h.setAttribute("cx", cx);
             h.setAttribute("cy", cy);
         });
+    },
+
+    persistManualRoute(conn, pts) {
+        if (!conn || !Array.isArray(pts) || pts.length < 2) return;
+        const from = Renderer.getHandleCoordinates(conn.from, conn.fromPos);
+        const to = Renderer.getHandleCoordinates(conn.to, conn.toPos);
+        const OFFSET = 14;
+        let adjToX = to.x;
+        let adjToY = to.y;
+
+        if (conn.toPos === "top") adjToY += OFFSET;
+        if (conn.toPos === "bottom") adjToY -= OFFSET;
+        if (conn.toPos === "left") adjToX += OFFSET;
+        if (conn.toPos === "right") adjToX -= OFFSET;
+
+        const normalizedPoints = this.forceOrthogonalPoints(pts.map(p => ({ x: p.x, y: p.y })));
+        normalizedPoints[0] = { x: from.x, y: from.y };
+        normalizedPoints[normalizedPoints.length - 1] = { x: adjToX, y: adjToY };
+
+        conn.manualBasePoints = this.forceOrthogonalPoints(normalizedPoints);
+        conn.manualAnchors = {
+            from: { x: from.x, y: from.y },
+            to: { x: adjToX, y: adjToY }
+        };
     }
 };
 

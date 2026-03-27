@@ -1885,6 +1885,8 @@ const idxRef = findColumn(header1, "Referencia", 4);
 const idxNombre = findColumn(header1, "Nombre Castellano", 5);
 const idxTipo = findColumn(header1, "Tipo de campo", 25);
 const idxProp1 = findColumn(header1, "Propiedad del tipo de campo 1", 26);
+const idxMomento = findColumn(header1, "Momento de captura", 30);
+const idxAgrupacion = findColumn(header1, "Agrupación", 31);
 
 const campos = [];
 
@@ -1896,6 +1898,8 @@ for (let i = 1; i < rows1.length; i++) {
   const nombre = normalizeText(cols[idxNombre]) || ref;
   const tipoRaw = normalizeText(cols[idxTipo]).toLowerCase();
   const prop1   = normalizeText(cols[idxProp1]).toLowerCase();
+  const momento = normalizeText(cols[idxMomento]) || "Solicitud";
+  const agrupacion = normalizeText(cols[idxAgrupacion]) || "Agrupación";
 
   // 🧠 Detección extendida de tipos
   let tipo = "texto";
@@ -1910,7 +1914,9 @@ for (let i = 1; i < rows1.length; i++) {
   campos.push({
     id: this.generateId(),
     ref, nombre, tipo,
-    opciones: []
+    opciones: [],
+    momento,
+    agrupacion
   });
 }
 
@@ -1982,10 +1988,17 @@ for (const nuevo of campos) {
   if (!existente) {
     nuevosUnicos.push(nuevo);
   } else {
+    existente.nombre = nuevo.nombre;
     // 🧠 Si ya existe pero el CSV tiene tipo más específico (no "texto"), actualiza tipo
     if (existente.tipo === "texto" && nuevo.tipo !== "texto") {
       existente.tipo = nuevo.tipo;
       console.log(`🔄 Actualizado tipo de ${existente.ref} → ${existente.tipo}`);
+    }
+    existente.momento = nuevo.momento || "Solicitud";
+    existente.agrupacion = nuevo.agrupacion || "Agrupación";
+
+    if (nuevo.tipo === "selector" && Array.isArray(nuevo.opciones) && nuevo.opciones.length > 0) {
+      existente.opciones = nuevo.opciones;
     }
   }
 }

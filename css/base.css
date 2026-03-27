@@ -963,11 +963,6 @@ input {
     color: #111827;
 }
 
-/* Si quieres que las notas no muestren los "handles" */
-.node.notas .handle {
-    display: none !important;
-}
-
 /* Y si quieres que el resizer no aparezca */
 .node.notas .node-resizer {
     display: none !important;
