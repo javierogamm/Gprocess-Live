@@ -1021,6 +1021,49 @@ redrawConnectionsDynamic(conn, fixedX, fixedY, mx, my, movingEnd) {
         }
         return d;
     },
+    simplifyOrthogonalPoints(points = []) {
+        if (!Array.isArray(points) || points.length < 2) return points;
+        const normalized = points.map((p) => ({
+            x: Math.round(p.x),
+            y: Math.round(p.y)
+        }));
+
+        const cleaned = [normalized[0]];
+        for (let i = 1; i < normalized.length; i++) {
+            const prev = cleaned[cleaned.length - 1];
+            const cur = normalized[i];
+            if (prev.x === cur.x && prev.y === cur.y) continue;
+            cleaned.push(cur);
+        }
+
+        if (cleaned.length < 3) return cleaned;
+
+        const simplified = [cleaned[0]];
+        for (let i = 1; i < cleaned.length - 1; i++) {
+            const a = simplified[simplified.length - 1];
+            const b = cleaned[i];
+            const c = cleaned[i + 1];
+            const colinear = (a.x === b.x && b.x === c.x) || (a.y === b.y && b.y === c.y);
+            if (!colinear) simplified.push(b);
+        }
+        simplified.push(cleaned[cleaned.length - 1]);
+        return simplified;
+    },
+    forceOrthogonalPoints(points = []) {
+        if (!Array.isArray(points) || points.length < 2) return points;
+        const fixed = points.map((p) => ({ x: p.x, y: p.y }));
+        for (let i = 1; i < fixed.length; i++) {
+            const prev = fixed[i - 1];
+            const cur = fixed[i];
+            if (prev.x !== cur.x && prev.y !== cur.y) {
+                const dx = Math.abs(cur.x - prev.x);
+                const dy = Math.abs(cur.y - prev.y);
+                if (dx >= dy) cur.y = prev.y;
+                else cur.x = prev.x;
+            }
+        }
+        return this.simplifyOrthogonalPoints(fixed);
+    },
     resolveConnectionPathPoints(conn, from, adjustedTo) {
         const hasManualRoute = Array.isArray(conn.manualBasePoints)
             && conn.manualBasePoints.length >= 2
@@ -1040,20 +1083,33 @@ redrawConnectionsDynamic(conn, fixedX, fixedY, mx, my, movingEnd) {
         const deltaFrom = { x: from.x - fromAnchor.x, y: from.y - fromAnchor.y };
         const deltaTo = { x: adjustedTo.x - toAnchor.x, y: adjustedTo.y - toAnchor.y };
 
-        const transformed = base.map((point, index) => {
-            const t = lastIndex === 0 ? 0 : index / lastIndex;
-            const dx = deltaFrom.x + (deltaTo.x - deltaFrom.x) * t;
-            const dy = deltaFrom.y + (deltaTo.y - deltaFrom.y) * t;
-            return {
-                x: point.x + dx,
-                y: point.y + dy
-            };
-        });
+        // Desplazamiento promedio para mantener la forma global sin deformaciones raras.
+        const deltaAvg = {
+            x: (deltaFrom.x + deltaTo.x) / 2,
+            y: (deltaFrom.y + deltaTo.y) / 2
+        };
+
+        const transformed = base.map((point) => ({
+            x: point.x + deltaAvg.x,
+            y: point.y + deltaAvg.y
+        }));
 
         transformed[firstIndex] = { x: from.x, y: from.y };
         transformed[lastIndex] = { x: adjustedTo.x, y: adjustedTo.y };
 
-        return transformed;
+        // Mantener ortogonalidad en los tramos pegados a los nodos.
+        if (transformed.length > 2) {
+            const firstLegBase = base[1];
+            if (firstLegBase.x === base[0].x) transformed[1].x = from.x;
+            else transformed[1].y = from.y;
+
+            const beforeLastIdx = transformed.length - 2;
+            const lastLegBase = base[beforeLastIdx];
+            if (lastLegBase.x === base[lastIndex].x) transformed[beforeLastIdx].x = adjustedTo.x;
+            else transformed[beforeLastIdx].y = adjustedTo.y;
+        }
+
+        return this.forceOrthogonalPoints(transformed);
     },
     /* =======================================================
        DIBUJAR CONEXIÓN
@@ -1733,11 +1789,11 @@ this.updateHandles(pts);        };
         if (conn.toPos === "left") adjToX += OFFSET;
         if (conn.toPos === "right") adjToX -= OFFSET;
 
-        const normalizedPoints = pts.map(p => ({ x: p.x, y: p.y }));
+        const normalizedPoints = this.forceOrthogonalPoints(pts.map(p => ({ x: p.x, y: p.y })));
         normalizedPoints[0] = { x: from.x, y: from.y };
         normalizedPoints[normalizedPoints.length - 1] = { x: adjToX, y: adjToY };
 
-        conn.manualBasePoints = normalizedPoints;
+        conn.manualBasePoints = this.forceOrthogonalPoints(normalizedPoints);
         conn.manualAnchors = {
             from: { x: from.x, y: from.y },
             to: { x: adjToX, y: adjToY }

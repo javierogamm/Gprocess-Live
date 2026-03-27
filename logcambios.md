@@ -1,5 +1,10 @@
 # Historial de cambios
 
+## v1.1.78
+- Corregida la persistencia de rutas editadas en conexiones para que, al mover nodos, los trazos se mantengan siempre ortogonales (segmentos rectos y giros de 90°) sin deformaciones onduladas.
+- Añadida normalización de puntos de conexión para redondear coordenadas, eliminar duplicados y simplificar tramos colineales al guardar y redibujar rutas manuales.
+- Consolidación de versión de la app en `1.1.78`.
+
 ## v1.1.77
 - Corregida la importación de tesauros vía CSV para que al actualizar referencias existentes también sobrescriba siempre `momento` y `agrupación` con los valores del fichero, y para que los nuevos campos se creen ya con esos datos.
 - El minimapa ahora arranca desactivado por defecto (estado OFF) y solo se muestra al pulsar su botón flotante.
