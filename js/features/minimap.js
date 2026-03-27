@@ -78,9 +78,7 @@ const MiniMap = {
     this.attachSelectionSync();
     this.patchCoreHooks();
 
-    this.windowEl.classList.add("visible");
-    this.render();
-    this.updateViewport();
+    this.windowEl.classList.remove("visible");
   },
 
   attachDragHandlers() {

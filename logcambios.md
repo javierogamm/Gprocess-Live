@@ -1,5 +1,13 @@
 # Historial de cambios
 
+## v1.1.77
+- Corregida la importación de tesauros vía CSV para que al actualizar referencias existentes también sobrescriba siempre `momento` y `agrupación` con los valores del fichero, y para que los nuevos campos se creen ya con esos datos.
+- El minimapa ahora arranca desactivado por defecto (estado OFF) y solo se muestra al pulsar su botón flotante.
+- Eliminada la opción visual para crear o seleccionar nodos de tipo **Decisión** desde los controles principales de la interfaz.
+- Habilitada la conexión mediante flechas en nodos de tipo **Nota** mostrando de nuevo sus handles de conexión.
+- Persistida la geometría personalizada de conexiones al editar tramos intermedios: la forma/posición de la línea se conserva al mover los nodos conectados.
+- Consolidación de versión de la app en `1.1.77`.
+
 ## v1.1.76
 - El botón flotante de **recarga** ahora vuelve a consultar el proyecto activo directamente en BDD antes de importarlo de nuevo en el canvas, evitando reutilizar una copia local desactualizada.
 - Reubicado el título del procedimiento en una franja superior independiente y centrada sobre el canvas para que no se superponga a los nodos del diagrama.
