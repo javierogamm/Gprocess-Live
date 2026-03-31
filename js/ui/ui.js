@@ -41,6 +41,8 @@ const UI = {
         this.inputDescripcion = document.getElementById("propDescripcion");
         this.inputTareaManual = document.getElementById("propTareaManual");
         this.inputAsignadoA = document.getElementById("propAsignadoA");
+        this.propTipoDocumentalLabel = document.getElementById("propTipoDocumentalLabel");
+        this.propTipoDocumental = document.getElementById("propTipoDocumental");
         this.btnPlantillaNodo = document.getElementById("btnPlantillaNodo");
 
         if (this.btnPlantillaNodo) {
@@ -52,6 +54,7 @@ const UI = {
 
         this.templateModal = document.getElementById("templateNodeModal");
         this.templateModalTitle = document.getElementById("templateModalTitle");
+        this.templateModalTipoDocumental = document.getElementById("templateModalTipoDocumental");
         this.templateModalTextarea = document.getElementById("templateModalTextarea");
 
         const templateModalClose = document.getElementById("templateModalClose");
@@ -67,6 +70,13 @@ const UI = {
         if (this.templateModal) {
             this.templateModal.addEventListener("click", (e) => {
                 if (e.target === this.templateModal) this.closeNodeTemplateModal();
+            });
+        }
+
+        if (this.propTipoDocumental) {
+            this.propTipoDocumental.addEventListener("change", (e) => {
+                if (!this.currentNodeId) return;
+                Engine.updateNode(this.currentNodeId, { tipoDocumental: e.target.value || "" });
             });
         }
 
@@ -2818,6 +2828,16 @@ showNodeProperties(id) {
     const tipoSelect = document.getElementById("propTipo");
     if (tipoSelect) tipoSelect.value = nodo.tipo || "formulario";
     this.refreshTemplateNodeButton(nodo);
+    this.refreshTipoDocumentalControl(nodo);
+
+    if (this.propTipoDocumental) {
+        const tipoDocumental = nodo.tipoDocumental || "";
+        const hasOption = Array.from(this.propTipoDocumental.options || [])
+            .some((option) => option.value === tipoDocumental);
+        this.propTipoDocumental.value = hasOption
+            ? tipoDocumental
+            : (tipoDocumental ? "Otros" : "");
+    }
 
     this.inputTitulo.value = nodo.titulo || "";
 
@@ -3179,6 +3199,19 @@ refreshTemplateNodeButton(nodo) {
     }
 },
 
+refreshTipoDocumentalControl(nodo) {
+    const isDocumento = String(nodo?.tipo || "").toLowerCase() === "documento";
+    if (this.propTipoDocumentalLabel) {
+        this.propTipoDocumentalLabel.style.display = isDocumento ? "block" : "none";
+    }
+    if (this.propTipoDocumental) {
+        this.propTipoDocumental.style.display = isDocumento ? "" : "none";
+        if (!isDocumento) {
+            this.propTipoDocumental.value = "";
+        }
+    }
+},
+
 openNodeTemplateModal(nodeId) {
     const nodo = Engine.getNode(nodeId);
     if (!nodo || !this.isTemplateCompatibleNode(nodo) || !this.templateModal) return;
@@ -3187,9 +3220,21 @@ openNodeTemplateModal(nodeId) {
     if (this.templateModalTitle) {
         this.templateModalTitle.textContent = `Plantilla: ${nodo.titulo || nodo.tipo}`;
     }
+    if (this.templateModalTipoDocumental) {
+        const tipoDocumental = nodo.tipoDocumental || "";
+        const hasOption = Array.from(this.templateModalTipoDocumental.options || [])
+            .some((option) => option.value === tipoDocumental);
+        this.templateModalTipoDocumental.value = hasOption
+            ? tipoDocumental
+            : (tipoDocumental ? "Otros" : "");
+    }
     if (this.templateModalTextarea) {
         this.templateModalTextarea.value = nodo.plantillaTexto || "";
-        this.templateModalTextarea.focus();
+        if (this.templateModalTipoDocumental) {
+            this.templateModalTipoDocumental.focus();
+        } else {
+            this.templateModalTextarea.focus();
+        }
     }
     this.templateModal.classList.remove("hidden");
 },
@@ -3204,8 +3249,12 @@ saveNodeTemplateModal() {
     }
 
     const plantillaTexto = this.templateModalTextarea.value || "";
+    const tipoDocumental = this.templateModalTipoDocumental
+        ? (this.templateModalTipoDocumental.value || "")
+        : "";
     nodo.plantillaTexto = plantillaTexto;
-    Engine.updateNode(nodo.id, { plantillaTexto });
+    nodo.tipoDocumental = tipoDocumental;
+    Engine.updateNode(nodo.id, { plantillaTexto, tipoDocumental });
     Engine.saveHistory();
     this.closeNodeTemplateModal();
 },
@@ -3213,6 +3262,9 @@ saveNodeTemplateModal() {
 closeNodeTemplateModal() {
     if (this.templateModal) {
         this.templateModal.classList.add("hidden");
+    }
+    if (this.templateModalTipoDocumental) {
+        this.templateModalTipoDocumental.value = "";
     }
     this.templateNodeId = null;
 },
@@ -3227,6 +3279,7 @@ closeNodeTemplateModal() {
         this.propsEmpty.style.display = "block";
         this.propsEditor.style.display = "none";
         this.refreshTemplateNodeButton(null);
+        this.refreshTipoDocumentalControl(null);
         this.propsConn.style.display = "none";
         if (this.inputResize) this.inputResize.value = "100";
         this.hideBulkAsignaciones();
@@ -3291,6 +3344,7 @@ if (tipoSelect) {
 
         nodo.tipo = newTipo;
         UI.refreshTemplateNodeButton(nodo);
+        UI.refreshTipoDocumentalControl(nodo);
 
         // 🔁 Redibujar nodo con la nueva forma
         Renderer.deleteNodeVisual(nodo.id);

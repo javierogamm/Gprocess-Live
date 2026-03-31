@@ -192,11 +192,14 @@ Engine.exportFlujoCSV = function() {
     
         const plazoTramite = esPlazo ? "Plazo" : "";
         const plazoJustificante = esPlazo ? "No" : "";
+        const tipoDocumentalNodo = cleanText(n.tipoDocumental || "");
         const tipoDocumental = esPlazo ? "Certificado" : "";
-    
-        const generarPlantilla = esDocumento ? "No" : "";
+        const tipoDocumentalDocumento = esDocumento ? tipoDocumentalNodo : "";
+
+        const generarPlantilla = esDocumento ? "Sí" : "";
         const cargarDocumento = esDocumento ? "Sí" : "";
-        const plantillaConfigurada = n.tipo.toLowerCase() === "formulario"
+        const tituloDocumento = esDocumento ? cleanText(n.titulo || "") : "";
+        const plantillaConfigurada = ["formulario", "documento"].includes(n.tipo.toLowerCase())
             ? (n.plantillaTexto?.length ? n.plantillaTexto : "Pendiente configurar plantilla")
             : "";
     
@@ -232,12 +235,12 @@ Engine.exportFlujoCSV = function() {
             "", // Órgano Circuito Resolución
             "No", // Cambiar estado
             "", // Nombre nuevo estado
-            generarPlantilla, // ✅ Generar plantilla (si documento → No)
+            generarPlantilla, // ✅ Generar plantilla (si documento → Sí)
             "", // Formato plantilla
             cargarDocumento, // ✅ Cargar documento (si documento → No)
             "", // Circuito documento
-            "", // Título documento
-            "", // Tipo documental documento
+            tituloDocumento, // Título documento
+            tipoDocumentalDocumento, // Tipo documental documento
             plantillaConfigurada, // Texto plantilla
             "", // Eliminar
             "", // Finalizar en plazo

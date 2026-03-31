@@ -1,5 +1,28 @@
 # Historial de cambios
 
+## v1.1.82
+- Corregida la exportación CSV para informar el valor del selector de **tipo documental** en la columna **Tipo documental documento** (para tareas de tipo Documento), dejando la columna **Tipo documental** para su uso específico previo (plazos).
+- Añadido el selector **Tipo documental** también en el panel lateral derecho de propiedades del nodo, situado justo debajo de **Tipo de nodo**.
+- El selector lateral solo se muestra en nodos de tipo **Documento**, guarda el valor directamente en el nodo y reutiliza la opción **Otros** para valores legacy no incluidos en catálogo.
+- Consolidación de versión de la app en `1.1.82`.
+
+## v1.1.81
+- Sustituido el campo libre de **Tipo documental** del modal de plantilla por un selector cerrado con los valores del segundo nivel del catálogo documental: Resolución, Acuerdo, Contrato, Convenio, Declaración, Comunicación, Notificación, Publicación, Acuse de recibo, Acta, Certificado, Diligencia, Informe, Solicitud y Denuncia.
+- Añadida la opción **Otros** al selector de tipo documental para cubrir casos fuera del catálogo.
+- Ajustada la carga del modal para que, si un nodo ya tiene un valor legacy no presente en el selector, se seleccione automáticamente **Otros**.
+- Consolidación de versión de la app en `1.1.81`.
+
+## v1.1.80
+- Ajustada la exportación de flujo a CSV para que los nodos de tipo **Documento** vuelquen también su contenido de plantilla en la columna **Texto plantilla**, igual que los nodos de tipo **Formulario**.
+- Cuando la plantilla de un nodo Formulario/Documento está vacía, el CSV mantiene el literal **"Pendiente configurar plantilla"** en dicha columna para facilitar la revisión previa a importación.
+- Consolidación de versión de la app en `1.1.80`.
+
+## v1.1.79
+- Ajustada la exportación de flujo a CSV para que las tareas de tipo **Documento** informen **"Sí"** en la columna **Generar plantilla**.
+- Actualizada la exportación CSV para que la columna **Titulo documento** tome el nombre/título del propio nodo cuando la tarea es de tipo documento.
+- Añadido el nuevo campo **Tipo documental** en el modal de plantilla del nodo, con persistencia en el nodo y volcado en la columna **Tipo documental** del CSV de proceso.
+- Consolidación de versión de la app en `1.1.79`.
+
 ## v1.1.78
 - Corregida la persistencia de rutas editadas en conexiones para que, al mover nodos, los trazos se mantengan siempre ortogonales (segmentos rectos y giros de 90°) sin deformaciones onduladas.
 - Añadida normalización de puntos de conexión para redondear coordenadas, eliminar duplicados y simplificar tramos colineales al guardar y redibujar rutas manuales.

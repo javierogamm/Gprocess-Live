@@ -179,6 +179,22 @@ input {
     font-family: inherit;
 }
 
+.template-modal-label {
+    display: block;
+    margin-top: 12px;
+    font-weight: 600;
+}
+
+.template-modal-input {
+    width: 100%;
+    margin-top: 8px;
+    box-sizing: border-box;
+    padding: 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-family: inherit;
+}
+
 #templateNodeModal .modal-content {
     width: min(1200px, 95vw);
     max-width: 1200px;
