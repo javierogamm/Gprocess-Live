@@ -193,7 +193,8 @@ Engine.exportFlujoCSV = function() {
         const plazoTramite = esPlazo ? "Plazo" : "";
         const plazoJustificante = esPlazo ? "No" : "";
         const tipoDocumentalNodo = cleanText(n.tipoDocumental || "");
-        const tipoDocumental = tipoDocumentalNodo || (esPlazo ? "Certificado" : "");
+        const tipoDocumental = esPlazo ? "Certificado" : "";
+        const tipoDocumentalDocumento = esDocumento ? tipoDocumentalNodo : "";
 
         const generarPlantilla = esDocumento ? "Sí" : "";
         const cargarDocumento = esDocumento ? "Sí" : "";
@@ -239,7 +240,7 @@ Engine.exportFlujoCSV = function() {
             cargarDocumento, // ✅ Cargar documento (si documento → No)
             "", // Circuito documento
             tituloDocumento, // Título documento
-            "", // Tipo documental documento
+            tipoDocumentalDocumento, // Tipo documental documento
             plantillaConfigurada, // Texto plantilla
             "", // Eliminar
             "", // Finalizar en plazo

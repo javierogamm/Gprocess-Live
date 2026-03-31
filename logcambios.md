@@ -1,5 +1,11 @@
 # Historial de cambios
 
+## v1.1.82
+- Corregida la exportación CSV para informar el valor del selector de **tipo documental** en la columna **Tipo documental documento** (para tareas de tipo Documento), dejando la columna **Tipo documental** para su uso específico previo (plazos).
+- Añadido el selector **Tipo documental** también en el panel lateral derecho de propiedades del nodo, situado justo debajo de **Tipo de nodo**.
+- El selector lateral solo se muestra en nodos de tipo **Documento**, guarda el valor directamente en el nodo y reutiliza la opción **Otros** para valores legacy no incluidos en catálogo.
+- Consolidación de versión de la app en `1.1.82`.
+
 ## v1.1.81
 - Sustituido el campo libre de **Tipo documental** del modal de plantilla por un selector cerrado con los valores del segundo nivel del catálogo documental: Resolución, Acuerdo, Contrato, Convenio, Declaración, Comunicación, Notificación, Publicación, Acuse de recibo, Acta, Certificado, Diligencia, Informe, Solicitud y Denuncia.
 - Añadida la opción **Otros** al selector de tipo documental para cubrir casos fuera del catálogo.
