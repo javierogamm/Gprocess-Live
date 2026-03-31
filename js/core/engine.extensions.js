@@ -197,6 +197,7 @@ Engine.exportFlujoCSV = function() {
         const tipoDocumentalDocumento = esDocumento ? tipoDocumentalNodo : "";
 
         const generarPlantilla = esDocumento ? "Sí" : "";
+        const formatoPlantilla = esDocumento ? "PDF" : "";
         const cargarDocumento = esDocumento ? "Sí" : "";
         const tituloDocumento = esDocumento ? cleanText(n.titulo || "") : "";
         const plantillaConfigurada = ["formulario", "documento"].includes(n.tipo.toLowerCase())
@@ -236,7 +237,7 @@ Engine.exportFlujoCSV = function() {
             "No", // Cambiar estado
             "", // Nombre nuevo estado
             generarPlantilla, // ✅ Generar plantilla (si documento → Sí)
-            "", // Formato plantilla
+            formatoPlantilla, // Formato plantilla (documento → PDF)
             cargarDocumento, // ✅ Cargar documento (si documento → No)
             "", // Circuito documento
             tituloDocumento, // Título documento
