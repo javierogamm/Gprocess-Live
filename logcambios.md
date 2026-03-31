@@ -1,5 +1,11 @@
 # Historial de cambios
 
+## v1.1.81
+- Sustituido el campo libre de **Tipo documental** del modal de plantilla por un selector cerrado con los valores del segundo nivel del catálogo documental: Resolución, Acuerdo, Contrato, Convenio, Declaración, Comunicación, Notificación, Publicación, Acuse de recibo, Acta, Certificado, Diligencia, Informe, Solicitud y Denuncia.
+- Añadida la opción **Otros** al selector de tipo documental para cubrir casos fuera del catálogo.
+- Ajustada la carga del modal para que, si un nodo ya tiene un valor legacy no presente en el selector, se seleccione automáticamente **Otros**.
+- Consolidación de versión de la app en `1.1.81`.
+
 ## v1.1.80
 - Ajustada la exportación de flujo a CSV para que los nodos de tipo **Documento** vuelquen también su contenido de plantilla en la columna **Texto plantilla**, igual que los nodos de tipo **Formulario**.
 - Cuando la plantilla de un nodo Formulario/Documento está vacía, el CSV mantiene el literal **"Pendiente configurar plantilla"** en dicha columna para facilitar la revisión previa a importación.

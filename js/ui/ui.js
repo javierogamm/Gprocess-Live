@@ -3189,7 +3189,12 @@ openNodeTemplateModal(nodeId) {
         this.templateModalTitle.textContent = `Plantilla: ${nodo.titulo || nodo.tipo}`;
     }
     if (this.templateModalTipoDocumental) {
-        this.templateModalTipoDocumental.value = nodo.tipoDocumental || "";
+        const tipoDocumental = nodo.tipoDocumental || "";
+        const hasOption = Array.from(this.templateModalTipoDocumental.options || [])
+            .some((option) => option.value === tipoDocumental);
+        this.templateModalTipoDocumental.value = hasOption
+            ? tipoDocumental
+            : (tipoDocumental ? "Otros" : "");
     }
     if (this.templateModalTextarea) {
         this.templateModalTextarea.value = nodo.plantillaTexto || "";

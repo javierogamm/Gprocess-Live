@@ -455,7 +455,25 @@
             <button id="templateModalClose" class="csv-close-btn" aria-label="Cerrar">&times;</button>
         </div>
         <label for="templateModalTipoDocumental" class="template-modal-label">Tipo documental</label>
-        <input id="templateModalTipoDocumental" class="template-modal-input" type="text" placeholder="Introduce el tipo documental...">
+        <select id="templateModalTipoDocumental" class="template-modal-input">
+            <option value="">Selecciona tipo documental...</option>
+            <option value="Resolución">Resolución</option>
+            <option value="Acuerdo">Acuerdo</option>
+            <option value="Contrato">Contrato</option>
+            <option value="Convenio">Convenio</option>
+            <option value="Declaración">Declaración</option>
+            <option value="Comunicación">Comunicación</option>
+            <option value="Notificación">Notificación</option>
+            <option value="Publicación">Publicación</option>
+            <option value="Acuse de recibo">Acuse de recibo</option>
+            <option value="Acta">Acta</option>
+            <option value="Certificado">Certificado</option>
+            <option value="Diligencia">Diligencia</option>
+            <option value="Informe">Informe</option>
+            <option value="Solicitud">Solicitud</option>
+            <option value="Denuncia">Denuncia</option>
+            <option value="Otros">Otros</option>
+        </select>
         <textarea id="templateModalTextarea" class="template-modal-textarea" placeholder="Escribe aquí el contenido de la plantilla..."></textarea>
         <div class="user-modal-actions">
             <button id="templateModalSave" class="btn">Guardar plantilla</button>
