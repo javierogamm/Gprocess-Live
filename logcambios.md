@@ -1,5 +1,10 @@
 # Historial de cambios
 
+## v1.1.83
+- Ajustada la exportación CSV de flujo para que los nodos de tipo **Documento** informen el valor **PDF** en la columna **Formato plantilla**.
+- Se mantiene el comportamiento existente del resto de columnas de exportación (incluyendo Generar plantilla, Cargar documento y Texto plantilla).
+- Consolidación de versión de la app en `1.1.83`.
+
 ## v1.1.82
 - Corregida la exportación CSV para informar el valor del selector de **tipo documental** en la columna **Tipo documental documento** (para tareas de tipo Documento), dejando la columna **Tipo documental** para su uso específico previo (plazos).
 - Añadido el selector **Tipo documental** también en el panel lateral derecho de propiedades del nodo, situado justo debajo de **Tipo de nodo**.
