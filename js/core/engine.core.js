@@ -780,6 +780,12 @@ alignSelectedNodes() {
         }
     }
 
+    if (props.tipoDocumental !== undefined) {
+        nodo.tipoDocumental = typeof props.tipoDocumental === "string"
+            ? props.tipoDocumental
+            : "";
+    }
+
     // ⭐ Manejo de arrays de asignaciones
     if (props.asignadosGrupos !== undefined) {
         nodo.asignadosGrupos = Array.isArray(props.asignadosGrupos)

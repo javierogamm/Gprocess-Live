@@ -1,5 +1,16 @@
 # Historial de cambios
 
+## v1.1.80
+- Ajustada la exportación de flujo a CSV para que los nodos de tipo **Documento** vuelquen también su contenido de plantilla en la columna **Texto plantilla**, igual que los nodos de tipo **Formulario**.
+- Cuando la plantilla de un nodo Formulario/Documento está vacía, el CSV mantiene el literal **"Pendiente configurar plantilla"** en dicha columna para facilitar la revisión previa a importación.
+- Consolidación de versión de la app en `1.1.80`.
+
+## v1.1.79
+- Ajustada la exportación de flujo a CSV para que las tareas de tipo **Documento** informen **"Sí"** en la columna **Generar plantilla**.
+- Actualizada la exportación CSV para que la columna **Titulo documento** tome el nombre/título del propio nodo cuando la tarea es de tipo documento.
+- Añadido el nuevo campo **Tipo documental** en el modal de plantilla del nodo, con persistencia en el nodo y volcado en la columna **Tipo documental** del CSV de proceso.
+- Consolidación de versión de la app en `1.1.79`.
+
 ## v1.1.78
 - Corregida la persistencia de rutas editadas en conexiones para que, al mover nodos, los trazos se mantengan siempre ortogonales (segmentos rectos y giros de 90°) sin deformaciones onduladas.
 - Añadida normalización de puntos de conexión para redondear coordenadas, eliminar duplicados y simplificar tramos colineales al guardar y redibujar rutas manuales.

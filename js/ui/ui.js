@@ -52,6 +52,7 @@ const UI = {
 
         this.templateModal = document.getElementById("templateNodeModal");
         this.templateModalTitle = document.getElementById("templateModalTitle");
+        this.templateModalTipoDocumental = document.getElementById("templateModalTipoDocumental");
         this.templateModalTextarea = document.getElementById("templateModalTextarea");
 
         const templateModalClose = document.getElementById("templateModalClose");
@@ -3187,9 +3188,16 @@ openNodeTemplateModal(nodeId) {
     if (this.templateModalTitle) {
         this.templateModalTitle.textContent = `Plantilla: ${nodo.titulo || nodo.tipo}`;
     }
+    if (this.templateModalTipoDocumental) {
+        this.templateModalTipoDocumental.value = nodo.tipoDocumental || "";
+    }
     if (this.templateModalTextarea) {
         this.templateModalTextarea.value = nodo.plantillaTexto || "";
-        this.templateModalTextarea.focus();
+        if (this.templateModalTipoDocumental) {
+            this.templateModalTipoDocumental.focus();
+        } else {
+            this.templateModalTextarea.focus();
+        }
     }
     this.templateModal.classList.remove("hidden");
 },
@@ -3204,8 +3212,12 @@ saveNodeTemplateModal() {
     }
 
     const plantillaTexto = this.templateModalTextarea.value || "";
+    const tipoDocumental = this.templateModalTipoDocumental
+        ? (this.templateModalTipoDocumental.value || "")
+        : "";
     nodo.plantillaTexto = plantillaTexto;
-    Engine.updateNode(nodo.id, { plantillaTexto });
+    nodo.tipoDocumental = tipoDocumental;
+    Engine.updateNode(nodo.id, { plantillaTexto, tipoDocumental });
     Engine.saveHistory();
     this.closeNodeTemplateModal();
 },
@@ -3213,6 +3225,9 @@ saveNodeTemplateModal() {
 closeNodeTemplateModal() {
     if (this.templateModal) {
         this.templateModal.classList.add("hidden");
+    }
+    if (this.templateModalTipoDocumental) {
+        this.templateModalTipoDocumental.value = "";
     }
     this.templateNodeId = null;
 },
