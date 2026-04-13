@@ -1,5 +1,10 @@
 # Historial de cambios
 
+## v1.1.84
+- Añadida la nueva columna **Asignado a Tesauro** en la exportación de **Tareas.csv**, colocada justo entre **Asignado a Usuario - Abre Exp** y **Permite reasignar**.
+- La nueva columna se exporta sin contenido (valor vacío) en todas las filas, tal como se solicitó.
+- Consolidación de versión de la app en `1.1.84`.
+
 ## v1.1.83
 - Ajustada la exportación CSV de flujo para que los nodos de tipo **Documento** informen el valor **PDF** en la columna **Formato plantilla**.
 - Se mantiene el comportamiento existente del resto de columnas de exportación (incluyendo Generar plantilla, Cargar documento y Texto plantilla).
