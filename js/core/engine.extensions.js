@@ -160,7 +160,7 @@ Engine.exportFlujoCSV = function() {
         "Tipo Tarea","Nombre Tarea","Días Alerta","Tipo de días","Prioritario",
         "Descripción Tarea","Asignado a Usuario - Nombre","Asignado a Grupo - Nombre",
         "Asignado a responsables exp","Asignado a unidad gestora","Asignado a Usuario - Abre Tarea",
-        "Asignado a Usuario - Abre Exp","Permite reasignar","Inicio Inmediato","Condición inicio inmediato",
+        "Asignado a Usuario - Abre Exp","Asignado a Tesauro","Permite reasignar","Inicio Inmediato","Condición inicio inmediato",
         "Nombre tesauro","Condición tesauro","Valor tesauro","Inicio manual","Acceso temporal Expediente",
         "Plazo Trámite","Plazo Justificante","Tipo documental","Tipo Circuito Resolución","Nombre Circuito Resolución",
         "Órgano Circuito Resolución","Cambiar estado","Nombre Nuevo Estado","Generar plantilla","Formato plantilla",
@@ -222,6 +222,7 @@ Engine.exportFlujoCSV = function() {
             asignadoUG, // Asignado a unidad gestora
             "No", // Asignado a Usuario - Abre Tarea
             "No", // Asignado a Usuario - Abre Exp
+            "", // Asignado a Tesauro
             "Sí", // Permite reasignar
             "No", // Inicio inmediato
             "", // Condición inicio inmediato
